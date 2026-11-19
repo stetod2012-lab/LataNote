@@ -89,7 +89,7 @@
 
   const sharedNotebook = () => {
     let nb = LN.state.notebooks.find((n) => n.shared);
-    if (!nb) { nb = { id: LN.uid(), name: 'Shared with me', color: '#0ea5e9', created: Date.now(), shared: true }; LN.state.notebooks.push(nb); LN.save(); }
+    if (!nb) { nb = { id: LN.uid(), type: 'folder', parentId: null, order: Date.now(), name: 'Shared with me', color: '#0ea5e9', created: Date.now(), shared: true }; LN.state.notebooks.push(nb); LN.save(); }
     return nb;
   };
 
@@ -220,7 +220,8 @@
     (remote.pageTemplates || []).forEach((t) => { if (!S.pageTemplates.some((x) => x.id === t.id)) S.pageTemplates.push(t); });
     // planner: union by id
     remote.events.forEach((ev) => { if (!S.events.some((e) => e.id === ev.id)) S.events.push(ev); });
-    S.notes.forEach((n) => { if (!LN.getNotebook(n.notebookId)) n.notebookId = (S.notebooks[0] || sharedNotebook()).id; });
+    S.notes.forEach((n) => { if (n.notebookId && !LN.getNotebook(n.notebookId)) n.notebookId = null; });
+    if (LN.lib) LN.lib.migrate();
     LN.save();
     LN.app.renderLibrary();
     const cur = LN.editor.note && LN.getNote(LN.editor.note.id);

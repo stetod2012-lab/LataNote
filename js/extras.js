@@ -408,7 +408,7 @@
     body.onchange = (e) => {
       const k = e.target.dataset.set;
       if (k === 'dark') LN.app.setTheme(e.target.checked ? 'dark' : 'light');
-      if (k === 'penonly') { const c = $('#pen-only'); c.checked = e.target.checked; c.dispatchEvent(new Event('change')); }
+      if (k === 'penonly') LN.app.setPenOnly(e.target.checked);
     };
   };
 

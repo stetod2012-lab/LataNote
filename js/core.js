@@ -196,6 +196,15 @@
     keyboard: 'M3 6h18v12H3z|M7 10h.01|M11 10h.01|M15 10h.01|M7 14h10',
     devices: 'M4 5h12v9H4z|M2 18h16|M18 9h4v11h-4z',
     layout: 'M4 3h16v18H4z|M4 8h16|M4 13h16|M8 3v18',
+    home: 'M3 11l9-8 9 8|M5 10v10h14V10|M10 20v-6h4v6',
+    divider: 'M3 12h18|M3 6h7|M14 6h7|M3 18h7|M14 18h7',
+    section: 'M4 7h6l2-3h8v16H4z',
+    chevdown: 'M6 9l6 6 6-6',
+    move: 'M5 9l-3 3 3 3|M9 5l3-3 3 3|M15 19l-3 3-3-3|M19 9l3 3-3 3|M2 12h20|M12 2v20',
+    shapes: 'M4 4h7v7H4z|M17.5 4a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z|M7.5 14 11 20H4z|M14 14h7v7h-7z',
+    insert: 'M12 5v14|M5 12h14|M3 3h18v18H3z',
+    sliders: 'M4 6h10|M18 6h2|M4 12h4|M12 12h8|M4 18h12|M20 18h0|M14 4v4|M8 10v4|M16 16v4',
+    back: 'M15 6l-6 6 6 6',
     bookmark: 'M6 3h12v18l-6-4-6 4z',
   };
   LN.icon = (name, cls = '') => {
@@ -206,6 +215,44 @@
   LN.hydrateIcons = (root = document) => {
     LN.$$('i[data-icon]', root).forEach((el) => { el.outerHTML = LN.icon(el.dataset.icon); });
   };
+
+  /* ---------- popover menu (floats above everything, never clipped) ---------- */
+  // html: buttons with data-pick; onPick(button) is called on click
+  LN.popover = (anchor, html, onPick, opts = {}) => {
+    let pop = LN.$('#popover');
+    if (!pop) { pop = document.createElement('div'); pop.id = 'popover'; pop.className = 'menu popover'; pop.hidden = true; document.body.appendChild(pop); bindPopover(pop); }
+    if (!pop.hidden && pop._anchor === anchor) { LN.closePopover(); return; }
+    pop.className = 'menu popover ' + (opts.cls || '');
+    pop.innerHTML = html;
+    pop._anchor = anchor; pop._onPick = onPick;
+    pop.hidden = false;
+    anchor.classList.add('pop-open');
+    const r = anchor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    let left = opts.alignRight ? r.right - w : r.left;
+    left = Math.max(8, Math.min(left, innerWidth - w - 8));
+    let top = r.bottom + 6;
+    if (top + h > innerHeight - 8) top = Math.max(8, r.top - h - 6);
+    pop.style.left = left + 'px'; pop.style.top = top + 'px';
+  };
+  LN.closePopover = () => {
+    const pop = LN.$('#popover'); if (!pop || pop.hidden) return;
+    pop.hidden = true;
+    if (pop._anchor) pop._anchor.classList.remove('pop-open');
+    pop._anchor = null;
+  };
+  function bindPopover(pop) {
+    pop.addEventListener('mousedown', (e) => e.preventDefault()); // keep text selection in the editor
+    pop.addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b || b.disabled) return;
+      const fn = pop._onPick;
+      if (!b.hasAttribute('data-keep')) LN.closePopover();
+      if (fn) fn(b);
+    });
+    document.addEventListener('pointerdown', (e) => { if (!pop.hidden && !pop.contains(e.target) && !(pop._anchor && pop._anchor.contains(e.target))) LN.closePopover(); }, true);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') LN.closePopover(); });
+    window.addEventListener('resize', LN.closePopover);
+    document.addEventListener('scroll', (e) => { if (!pop.contains(e.target)) LN.closePopover(); }, true);
+  }
 
   /* ---------- toast & dialogs ---------- */
   let toastT;
@@ -260,7 +307,7 @@
     LN.state.notebooks = LN.state.notebooks.filter((nb) => !SAMPLE_NBS.includes(nb.name) || LN.state.notes.some((n) => n.notebookId === nb.id));
     LN.state.events = LN.state.events.filter((e) => !SAMPLE_EVENTS.includes(e.title));
     if (LN.state.ui.noteId && !LN.getNote(LN.state.ui.noteId)) LN.state.ui.noteId = null;
-    if (LN.state.ui.notebookId && !LN.getNotebook(LN.state.ui.notebookId)) LN.state.ui.notebookId = null;
+    if (LN.state.ui.containerId && LN.state.ui.containerId !== '__trash' && !LN.getNotebook(LN.state.ui.containerId)) LN.state.ui.containerId = null;
     return before !== LN.state.notes.length;
   };
 })();

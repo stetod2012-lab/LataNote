@@ -27,7 +27,8 @@ Everything is free. There are no paid plans.
 | **Planner & focus** | Month calendar of classes, tasks, exams and events linked to notes, plus a Pomodoro focus timer. |
 | **Full screen & present** | Full-screen mode (<kbd>F</kbd>), with focus mode on iPhone. Full-screen presentation with a laser pointer. |
 | **Installable & offline** | Progressive web app with a manifest and service worker: install to the home screen or desktop, works offline, and opens `.latanote` files. |
-| **Organize & share** | Notebooks, pinned notes, full-text search (including handwriting), Trash with 30-day restore. Export to HTML, Markdown or PDF (print), and share notes or whole notebooks as `.latanote` files. Backup and restore, dark mode, responsive layout. |
+| **Library** | Organize as **Folder › Divider › Notebook › Section › Note**. Folders can nest, and levels can be skipped. The **All notes** page shows every note as a page thumbnail side by side, with your folders and notebooks above. Folder pages group notebooks under their dividers, and notebook pages show sections as tabs. The sidebar holds a collapsible tree. Create items from **+ New** or any item's menu, move things by drag and drop or **Move to…**, and share any folder or notebook as a file. |
+| **Organize & share** | Pinned notes, full-text search (including handwriting), Trash with 30-day restore. Export to HTML, Markdown or PDF (print), and share notes or whole folders as `.latanote` files. Backup and restore, dark mode, responsive layout. |
 
 ## Running it
 
@@ -78,6 +79,7 @@ js/core.js               storage, state, icons, dialogs
 js/paper.js              paper styles, spacing, colors, custom papers, page templates
 js/ink.js                ink engine and lasso
 js/editor.js             pages, text layer, templates, formatting, imports
+js/library.js            folders, dividers, notebooks, sections, sidebar tree, All notes page
 js/audio.js              recording and ink-synced playback
 js/planner.js            calendar and agenda
 js/study.js              study assistant and tutor

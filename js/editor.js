@@ -32,8 +32,8 @@
     if (LN.audio) LN.audio.stopPlayback();
     if (!note) {
       const any = LN.state.notes.length > 0;
-      $('#empty-title').textContent = any ? 'No note open' : 'Your notebook is empty';
-      $('#empty-msg').textContent = any ? 'Pick a note from the list, or create a new one.' : 'Create your first note to start writing, drawing, recording and studying.';
+      $('#empty-title').textContent = any ? 'No note open' : 'Your library is empty';
+      $('#empty-msg').textContent = any ? 'Open a note from the library, or create a new one.' : 'Create your first note to start writing, drawing, recording and studying.';
       $('#templates').hidden = true;
     }
     if (!note) { $('#pages').innerHTML = ''; E.pages = []; LN.emit('note-opened', null); return; }
@@ -47,10 +47,10 @@
   };
 
   E.renderChip = () => {
-    const nb = E.note && LN.getNotebook(E.note.notebookId);
-    const chip = $('#nb-chip');
-    chip.textContent = nb ? nb.name : 'No notebook';
-    chip.style.setProperty('--c', nb ? nb.color : '#94a3b8');
+    const chip = $('#nb-chip'); if (!chip) return;
+    const path = E.note && E.note.notebookId && LN.lib ? LN.lib.path(E.note.notebookId) : [];
+    chip.textContent = path.length ? path.map((c) => c.name).join(' › ') : 'All notes';
+    chip.style.setProperty('--c', path.length ? LN.lib.colorOf(E.note.notebookId) : '#94a3b8');
   };
 
   E.renderPages = () => {
@@ -152,12 +152,16 @@
     const block = document.createElement('div'); block.className = 'page-block';
     const meta = document.createElement('div'); meta.className = 'page-meta';
     meta.innerHTML = `<span>Page ${i + 1} of ${total}</span>
-      <button class="icon-btn sm" data-page-cmd="paper" title="Change this page’s background">${LN.icon('layout')}</button>
-      <button class="icon-btn sm" data-page-cmd="template" title="Save page as a template">${LN.icon('bookmark')}</button>
-      <button class="icon-btn sm" data-page-cmd="up" title="Move page up" ${i === 0 ? 'disabled' : ''}>${LN.icon('chevleft', 'rot90')}</button>
-      <button class="icon-btn sm" data-page-cmd="down" title="Move page down" ${i === total - 1 ? 'disabled' : ''}>${LN.icon('chevright', 'rot90')}</button>
-      <button class="icon-btn sm" data-page-cmd="delete" title="Delete page">${LN.icon('trash')}</button>`;
-    meta.addEventListener('click', (e) => { const b = e.target.closest('[data-page-cmd]'); if (b) E.pageCmd(b.dataset.pageCmd, i); });
+      <button class="icon-btn sm" data-page-cmd="menu" title="Page options" aria-label="Page ${i + 1} options">${LN.icon('more')}</button>`;
+    meta.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-page-cmd]'); if (!b) return;
+      LN.popover(b, `<button data-pick="paper">${LN.icon('layout')} Change background</button>
+        <button data-pick="duplicate">${LN.icon('copy')} Duplicate page</button>
+        <button data-pick="template">${LN.icon('bookmark')} Save as template</button>
+        <hr><button data-pick="up" ${i === 0 ? 'disabled' : ''}>${LN.icon('chevleft', 'rot90')} Move up</button>
+        <button data-pick="down" ${i === total - 1 ? 'disabled' : ''}>${LN.icon('chevright', 'rot90')} Move down</button>
+        <hr><button data-pick="delete" class="danger">${LN.icon('trash')} Delete page</button>`, (x) => E.pageCmd(x.dataset.pick, i), { alignRight: true });
+    });
 
     const wrap = document.createElement('div'); wrap.className = 'page-wrap';
     const page = document.createElement('div');
@@ -472,6 +476,10 @@
     const pages = E.note.pages;
     if (cmd === 'paper') { LN.openPaperPicker(i); return; }
     if (cmd === 'template') { LN.savePageTemplate(E.note, pages[i]); return; }
+    if (cmd === 'duplicate') {
+      const copy = JSON.parse(JSON.stringify(pages[i])); copy.id = LN.uid(); copy.strokes.forEach((st) => delete st.rec);
+      pages.splice(i + 1, 0, copy);
+    }
     if (cmd === 'delete') {
       if (pages.length === 1) {
         if (!(await LN.confirm('Clear this page?', 'This is the only page, so its text and ink will be cleared.', 'Clear'))) return;
