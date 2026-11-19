@@ -34,8 +34,9 @@
   /* ---------- packing notes for the wire ---------- */
   const shapeOf = (note) => note.pages.map((p) => p.id).join(',');
   const pack = (note, withBg) => ({
-    id: note.id, title: note.title, paper: note.paper, created: note.created, updated: note.updated, cards: note.cards || [],
-    pages: note.pages.map((p) => ({ id: p.id, html: p.html, strokes: p.strokes, ocr: p.ocr || '', bg: withBg ? p.bg : null, bgH: p.bgH, hasBg: !!p.bg })),
+    id: note.id, title: note.title, paper: note.paper, spacing: note.spacing, color: note.color, created: note.created, updated: note.updated, cards: note.cards || [],
+    papers: withBg ? LN.papersUsedBy([note]) : [],
+    pages: note.pages.map((p) => ({ id: p.id, html: p.html, strokes: p.strokes, ocr: p.ocr || '', bg: withBg ? p.bg : null, bgH: p.bgH, hasBg: !!p.bg, paper: p.paper, spacing: p.spacing, color: p.color })),
   });
 
   /* ======================= LIVE NOTE ======================= */
@@ -65,10 +66,11 @@
 
   const applyIncoming = (remote, from) => {
     let note = LN.getNote(remote.id);
+    LN.mergePapers(remote.papers);
     C.applying = true;
     try {
       if (!note) {
-        note = Object.assign(LN.newNote(sharedNotebook().id, remote.title), { id: remote.id, paper: remote.paper, cards: remote.cards || [] });
+        note = Object.assign(LN.newNote(sharedNotebook().id, remote.title), { id: remote.id, paper: remote.paper, spacing: remote.spacing, color: remote.color, cards: remote.cards || [] });
         note.pages = remote.pages.map((p) => Object.assign(LN.newPage(), p));
         LN.state.notes.push(note);
         LN.touch(note);
@@ -77,7 +79,7 @@
         // keep page backgrounds we already have when the update omitted them
         remote.pages.forEach((rp) => { if (rp.hasBg && !rp.bg) { const local = note.pages.find((p) => p.id === rp.id); if (local) rp.bg = local.bg; } });
         if (LN.editor.note && LN.editor.note.id === note.id) LN.editor.applyRemote(remote);
-        else { note.title = remote.title; note.paper = remote.paper; note.pages = remote.pages.map((p) => Object.assign(LN.newPage(), p)); }
+        else { note.title = remote.title; note.paper = remote.paper; note.spacing = remote.spacing; note.color = remote.color; note.pages = remote.pages.map((p) => Object.assign(LN.newPage(), p)); }
         LN.touch(note);
       }
       lastShape = shapeOf(note);
@@ -184,6 +186,7 @@
 
   /* ======================= DEVICE SYNC ======================= */
   const packState = () => ({
+    customPapers: LN.state.customPapers || [], pageTemplates: LN.state.pageTemplates || [],
     notebooks: LN.state.notebooks, events: LN.state.events, trash: (LN.state.trash || []).map((n) => ({ id: n.id, deletedAt: n.deletedAt, updated: n.updated })),
     notes: LN.state.notes.map((n) => Object.assign(pack(n, true), { notebookId: n.notebookId, pinned: !!n.pinned, recordings: [] })),
   });
@@ -212,6 +215,9 @@
       }
     });
     S.notes = S.notes.filter((n) => { const del = trashed.get(n.id); if (del && del >= n.updated && !(S.trash || []).some((t) => t.id === n.id)) { (S.trash = S.trash || []).push(Object.assign(n, { deletedAt: del })); return false; } return true; });
+    LN.mergePapers(remote.customPapers);
+    S.pageTemplates = S.pageTemplates || [];
+    (remote.pageTemplates || []).forEach((t) => { if (!S.pageTemplates.some((x) => x.id === t.id)) S.pageTemplates.push(t); });
     // planner: union by id
     remote.events.forEach((ev) => { if (!S.events.some((e) => e.id === ev.id)) S.events.push(ev); });
     S.notes.forEach((n) => { if (!LN.getNotebook(n.notebookId)) n.notebookId = (S.notebooks[0] || sharedNotebook()).id; });

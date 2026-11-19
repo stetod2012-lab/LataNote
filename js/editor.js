@@ -39,7 +39,7 @@
     if (!note) { $('#pages').innerHTML = ''; E.pages = []; LN.emit('note-opened', null); return; }
     $('#note-title').value = note.title;
     E.renderChip();
-    $('#paper-select').value = note.paper;
+    E.updatePaperLabel();
     E.renderPages();
     $('#pages-area').scrollTop = 0;
     E.updateUndoButtons();
@@ -89,14 +89,21 @@
     el.hidden = !show;
     if (!show) return;
     el.innerHTML = `<span class="tpl-label">Start with a template</span>` + E.TEMPLATES.map((t) =>
-      `<button class="tpl" data-tpl="${t.id}">${LN.icon(t.icon)}<span>${t.name}</span></button>`).join('');
+      `<button class="tpl" data-tpl="${t.id}">${LN.icon(t.icon)}<span>${t.name}</span></button>`).join('') +
+      (LN.state.pageTemplates || []).map((t) => `<button class="tpl mine" data-utpl="${t.id}">${LN.icon('bookmark')}<span>${LN.esc(t.name)}</span></button>`).join('') +
+      `<button class="tpl" data-tpl-paper>${LN.icon('layout')}<span>Choose paper…</span></button>`;
+  };
+  E.applyUserTemplate = (id) => {
+    const t = (LN.state.pageTemplates || []).find((x) => x.id === id); if (!t || !E.note) return;
+    E.note.pages[0] = LN.pageFromTemplate(t);
+    if (!E.note.title) { E.note.title = t.name; $('#note-title').value = t.name; }
+    LN.touch(E.note); E.renderPages(); $('#templates').hidden = true;
   };
   E.applyTemplate = (id) => {
     const t = E.TEMPLATES.find((x) => x.id === id); if (!t || !E.note) return;
     E.note.pages[0].html = t.html();
-    E.note.paper = t.paper;
+    E.note.paper = t.paper; delete E.note.pages[0].paper;
     if (!E.note.title && t.title) { E.note.title = t.title; $('#note-title').value = t.title; }
-    $('#paper-select').value = t.paper;
     LN.touch(E.note);
     E.renderPages();
     $('#templates').hidden = true;
@@ -114,7 +121,9 @@
     if (!note || note.id !== remote.id) return false;
     const sameShape = remote.pages.length === note.pages.length && remote.pages.every((p, i) => p.id === note.pages[i].id);
     if (note.title !== remote.title) { note.title = remote.title; if (document.activeElement !== $('#note-title')) $('#note-title').value = remote.title; }
-    if (note.paper !== remote.paper) { note.paper = remote.paper; $('#paper-select').value = remote.paper; if (sameShape) E.pages.forEach((r) => { if (!r.pg.bg) r.page.className = 'page paper-' + remote.paper; }); }
+    LN.mergePapers(remote.papers);
+    let paperChanged = false;
+    ['paper', 'spacing', 'color'].forEach((k) => { if (note[k] !== remote[k]) { note[k] = remote[k]; paperChanged = true; } });
     note.cards = remote.cards || note.cards;
     if (!sameShape) {
       note.pages = remote.pages.map((p) => Object.assign(LN.newPage(), p));
@@ -133,7 +142,9 @@
         pg.strokes = rp.strokes; rec.ink.render();
       }
       pg.ocr = rp.ocr;
+      ['paper', 'spacing', 'color'].forEach((k) => { if (pg[k] !== rp[k]) { if (rp[k]) pg[k] = rp[k]; else delete pg[k]; paperChanged = true; } });
     });
+    if (paperChanged) E.refreshPaper();
     return true;
   };
 
@@ -141,6 +152,8 @@
     const block = document.createElement('div'); block.className = 'page-block';
     const meta = document.createElement('div'); meta.className = 'page-meta';
     meta.innerHTML = `<span>Page ${i + 1} of ${total}</span>
+      <button class="icon-btn sm" data-page-cmd="paper" title="Change this page’s background">${LN.icon('layout')}</button>
+      <button class="icon-btn sm" data-page-cmd="template" title="Save page as a template">${LN.icon('bookmark')}</button>
       <button class="icon-btn sm" data-page-cmd="up" title="Move page up" ${i === 0 ? 'disabled' : ''}>${LN.icon('chevleft', 'rot90')}</button>
       <button class="icon-btn sm" data-page-cmd="down" title="Move page down" ${i === total - 1 ? 'disabled' : ''}>${LN.icon('chevright', 'rot90')}</button>
       <button class="icon-btn sm" data-page-cmd="delete" title="Delete page">${LN.icon('trash')}</button>`;
@@ -148,7 +161,8 @@
 
     const wrap = document.createElement('div'); wrap.className = 'page-wrap';
     const page = document.createElement('div');
-    page.className = 'page paper-' + (pg.bg ? 'blank' : E.note.paper) + (pg.bg ? ' has-bg' : '');
+    page.className = 'page' + (pg.bg ? ' has-bg' : '');
+    E.stylePage(page, pg);
     if (pg.bg) {
       const img = document.createElement('img'); img.className = 'page-bg'; img.src = pg.bg; img.alt = ''; img.draggable = false;
       page.appendChild(img);
@@ -158,7 +172,7 @@
     text.contentEditable = E.mode === 'type' ? 'true' : 'false';
     text.spellcheck = true;
     text.innerHTML = pg.html;
-    if (pg.bg) text.style.minHeight = pg.bgH + 'px';
+    text.style.minHeight = page.style.minHeight;
     if (i === 0) text.dataset.placeholder = 'Start typing here, or switch to Draw and write by hand…';
     text.addEventListener('input', () => { pg.html = text.innerHTML; LN.touch(E.note); if (!$('#templates').hidden) E.renderTemplates(); });
     text.addEventListener('click', (e) => {
@@ -175,6 +189,31 @@
     const rec = { pg, block, wrap, page, text, canvas, ink: new LN.Ink(canvas, pg, E.inkHost) };
     new ResizeObserver(() => E.layout(rec)).observe(page);
     return rec;
+  };
+
+  /* ---------- paper ---------- */
+  E.stylePage = (page, pg) => {
+    const eff = LN.effPaper(E.note, pg);
+    const ps = LN.paperStyle(pg.bg ? { paper: 'blank', spacing: eff.spacing, color: eff.color } : eff);
+    page.style.cssText = ps.style;
+    page.style.minHeight = Math.max(ps.minH, pg.bg ? pg.bgH : 0) + 'px';
+    const text = page.querySelector('.page-text'); if (text) text.style.minHeight = page.style.minHeight;
+  };
+  E.refreshPaper = () => {
+    E.pages.forEach((r) => { const t = r.page.style.transform; E.stylePage(r.page, r.pg); r.page.style.transform = t; });
+    E.updatePaperLabel();
+  };
+  E.updatePaperLabel = () => {
+    const l = $('#paper-label'); if (!l || !E.note) return;
+    const eff = LN.effPaper(E.note, null);
+    l.textContent = LN.paperName(eff.paper) + (eff.spacing !== 'normal' ? ` · ${LN.SPACINGS[eff.spacing].name}` : '');
+  };
+  // index of the page currently in view
+  E.visiblePage = () => {
+    const area = $('#pages-area'), top = area.getBoundingClientRect().top + area.clientHeight * 0.3;
+    let best = 0;
+    E.pages.forEach((r, i) => { if (r.block.getBoundingClientRect().top <= top) best = i; });
+    return Math.min(best, Math.max(0, E.note.pages.length - 1));
   };
 
   E.layout = (rec) => {
@@ -374,31 +413,42 @@
     return pdfjsP;
   };
 
+  E.imageToPage = async (file) => {
+    const { url, w, h } = await downscale(file, LN.PAGE_W * 2);
+    return { url, h: (h / w) * LN.PAGE_W };
+  };
+  // render up to `max` PDF pages as images sized for LataNote pages
+  E.renderPdf = async (file, max = 80, onPage) => {
+    const pdfjs = await loadPdfJs();
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    const n = Math.min(doc.numPages, max);
+    const out = [];
+    out.total = doc.numPages;
+    for (let i = 1; i <= n; i++) {
+      if (onPage) onPage(i, n);
+      const page = await doc.getPage(i);
+      const v1 = page.getViewport({ scale: 1 });
+      const vp = page.getViewport({ scale: (LN.PAGE_W * 2) / v1.width });
+      const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: g, viewport: vp }).promise;
+      out.push({ url: c.toDataURL('image/jpeg', 0.82), h: (vp.height / vp.width) * LN.PAGE_W });
+    }
+    return out;
+  };
+
   E.importFile = async (file) => {
     if (!file || !E.note) return;
     if (file.type.startsWith('image/')) {
-      const { url, w, h } = await downscale(file, LN.PAGE_W * 2);
-      E.addBgPages([{ url, h: (h / w) * LN.PAGE_W }]);
+      E.addBgPages([await E.imageToPage(file)]);
       LN.toast('Image added as a page. Switch to Draw to annotate it.');
       return;
     }
     if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) { LN.toast('Choose a PDF or image file.'); return; }
     try {
       LN.toast('Opening PDF…');
-      const pdfjs = await loadPdfJs();
-      const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
-      const n = Math.min(doc.numPages, 80);
-      const out = [];
-      for (let i = 1; i <= n; i++) {
-        LN.toast(`Importing page ${i} of ${n}…`);
-        const page = await doc.getPage(i);
-        const v1 = page.getViewport({ scale: 1 });
-        const vp = page.getViewport({ scale: (LN.PAGE_W * 2) / v1.width });
-        const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
-        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
-        await page.render({ canvasContext: g, viewport: vp }).promise;
-        out.push({ url: c.toDataURL('image/jpeg', 0.82), h: (vp.height / vp.width) * LN.PAGE_W });
-      }
+      const out = await E.renderPdf(file, 80, (i, n) => LN.toast(`Importing page ${i} of ${n}…`));
+      const n = out.length, doc = { numPages: out.total };
       if (!E.note.title || E.note.title === 'Untitled note') { E.note.title = file.name.replace(/\.pdf$/i, ''); $('#note-title').value = E.note.title; }
       E.addBgPages(out);
       LN.toast(doc.numPages > n ? `Imported the first ${n} of ${doc.numPages} pages.` : `Imported ${n} page${n > 1 ? 's' : ''}. Switch to Draw to annotate.`);
@@ -420,10 +470,13 @@
 
   E.pageCmd = async (cmd, i) => {
     const pages = E.note.pages;
+    if (cmd === 'paper') { LN.openPaperPicker(i); return; }
+    if (cmd === 'template') { LN.savePageTemplate(E.note, pages[i]); return; }
     if (cmd === 'delete') {
       if (pages.length === 1) {
         if (!(await LN.confirm('Clear this page?', 'This is the only page, so its text and ink will be cleared.', 'Clear'))) return;
-        pages[0] = LN.newPage();
+        pages[0] = Object.assign(LN.newPage(), { paper: pages[0].paper, spacing: pages[0].spacing, color: pages[0].color });
+        ['paper', 'spacing', 'color'].forEach((k) => { if (!pages[0][k]) delete pages[0][k]; });
       } else {
         if (!pageIsEmpty(pages[i]) && !(await LN.confirm(`Delete page ${i + 1}?`, 'Its text, ink and background will be removed.'))) return;
         pages.splice(i, 1);
@@ -445,18 +498,12 @@
     E.redrawInk(); LN.touch(E.note);
   };
 
-  E.setPaper = (paper) => {
-    if (!E.note) return;
-    E.note.paper = paper;
-    E.pages.forEach((r) => { if (!r.pg.bg) r.page.className = 'page paper-' + paper; });
-    LN.touch(E.note);
-  };
 
   /* Snapshot of a page for presenting / exporting: html with ink as an image */
   E.snapshot = (rec) => ({
     html: rec.pg.html,
     bg: rec.pg.bg,
-    paper: rec.pg.bg ? 'blank' : E.note.paper,
+    style: rec.page.style.cssText.replace(/transform:[^;]*;?/, ''),
     w: rec.page.offsetWidth,
     h: rec.page.offsetHeight,
     ink: rec.pg.strokes.length ? E.inkPNG(rec) : null,

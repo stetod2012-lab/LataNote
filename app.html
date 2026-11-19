@@ -172,14 +172,8 @@
         </div>
 
         <div class="tb-group tb-right">
-          <select id="paper-select" title="Paper" aria-label="Paper style">
-            <option value="lined">Lined</option>
-            <option value="grid">Grid</option>
-            <option value="dot">Dotted</option>
-            <option value="cornell">Cornell</option>
-            <option value="blank">Blank</option>
-          </select>
-          <button class="tb-btn" data-cmd="add-page" title="Add page"><i data-icon="pageplus"></i></button>
+          <button class="tb-btn paper-btn" data-cmd="paper" title="Page background, line spacing and paper color"><i data-icon="layout"></i><span id="paper-label">Lined</span></button>
+          <button class="tb-btn" data-cmd="add-page" title="Add a page: blank, duplicate, from a template, another note or a file"><i data-icon="pageplus"></i></button>
           <button class="tb-btn" data-cmd="import-pdf" title="Import PDF or image to annotate"><i data-icon="filepdf"></i></button>
           <span class="sep"></span>
           <button class="tb-btn" data-zoom="-1" title="Zoom out">−</button>
@@ -311,6 +305,7 @@
 <input type="file" id="file-import" accept=".latanote,.json,application/json" hidden>
 
 <script src="js/core.js"></script>
+<script src="js/paper.js"></script>
 <script src="js/ink.js"></script>
 <script src="js/editor.js"></script>
 <script src="js/audio.js"></script>

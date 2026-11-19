@@ -160,7 +160,7 @@
     if (cmd === 'export-html') App.exportHTML();
     else if (cmd === 'print') window.print();
     else if (cmd === 'share') {
-      LN.download(`${LN.safeName(note.title)}.latanote`, JSON.stringify({ type: 'latanote-note', version: 1, note: Object.assign({}, note, { recordings: [] }) }), 'application/json');
+      LN.download(`${LN.safeName(note.title)}.latanote`, JSON.stringify({ type: 'latanote-note', version: 1, note: Object.assign({}, note, { recordings: [] }), papers: LN.papersUsedBy([note]) }), 'application/json');
       LN.toast('Note file downloaded. Anyone with LataNote can import it.');
     } else if (cmd === 'duplicate') {
       const copy = JSON.parse(JSON.stringify(note));
@@ -184,7 +184,8 @@
     else if (cmd === 'ocr') LN.extras.ocrNote();
     else if (cmd === 'speak') LN.extras.speak();
     else if (cmd === 'export-md') LN.extras.exportMarkdown();
-    else if (cmd === 'dictate') LN.extras.dictate(); else if (cmd === 'add-page') E().addPage();
+    else if (cmd === 'dictate') LN.extras.dictate(); else if (cmd === 'add-page') LN.openAddPage();
+    else if (cmd === 'paper') LN.openPaperPicker('all');
     else if (cmd === 'import-pdf') $('#file-pdf').click();
     else if (cmd === 'image') { $('#file-image').click(); }
     else if (cmd === 'checklist') E().checklist();
@@ -193,13 +194,6 @@
   };
 
   /* ---------- export ---------- */
-  const PAPER_CSS = {
-    lined: 'background-image:linear-gradient(90deg,transparent 79px,#f4b4b4 79px,#f4b4b4 81px,transparent 81px),linear-gradient(transparent 31px,#cfe0f5 31px,#cfe0f5 32px);background-size:100% 100%,100% 32px;',
-    grid: 'background-image:linear-gradient(#e3e8f0 1px,transparent 1px),linear-gradient(90deg,#e3e8f0 1px,transparent 1px);background-size:24px 24px;',
-    dot: 'background-image:radial-gradient(circle,#c3cad6 1.3px,transparent 1.6px);background-size:24px 24px;',
-    cornell: 'background-image:linear-gradient(90deg,transparent 219px,#f4b4b4 219px,#f4b4b4 221px,transparent 221px),linear-gradient(transparent 31px,#cfe0f5 31px,#cfe0f5 32px);background-size:100% 100%,100% 32px;',
-    blank: '',
-  };
   App.exportHTML = () => {
     const note = E().note;
     const pages = E().pages.map(E().snapshot);
@@ -211,9 +205,8 @@ h1.doc{max-width:816px;margin:32px auto 8px;font-size:22px;padding:0 12px}
 .pg{position:relative;width:816px;margin:16px auto;background:#fff;box-shadow:0 4px 18px rgba(0,0,0,.08);overflow:hidden}
 .pg .bg{position:absolute;inset:0 0 auto 0;width:100%}
 .pg .ink{position:absolute;inset:0;width:100%;height:100%;mix-blend-mode:multiply}
-.txt{position:relative;padding:38px 56px 64px 96px;font-size:18px;line-height:32px}
-.cornell .txt{padding-left:236px}.blank .txt,.grid .txt,.dot .txt{padding:40px 56px}.hasbg .txt{padding:40px 56px}
-.txt h1{font-size:30px;line-height:64px;margin:0}.txt h2{font-size:23px;line-height:32px;margin:0 0 0}.txt h3{font-size:19px;line-height:32px;margin:0}
+.txt{position:relative;padding:var(--pad-t) 56px 64px var(--pad-l);font-size:var(--fs);line-height:var(--ls)}.hasbg .txt{padding:40px 56px}
+.txt h1{font-size:calc(var(--fs)*1.67);line-height:calc(var(--ls)*2);margin:0}.txt h2{font-size:calc(var(--fs)*1.28);line-height:var(--ls);margin:0}.txt h3{font-size:calc(var(--fs)*1.06);line-height:var(--ls);margin:0}
 .txt p,.txt ul,.txt ol{margin:0}.txt img{max-width:100%;height:auto}
 .txt table{border-collapse:collapse;margin:0 0 32px}.txt td,.txt th{border:1px solid #cbd5e1;padding:0 10px;min-width:80px}
 .txt blockquote{margin:0;padding-left:16px;border-left:3px solid #6366f1;color:#475569}
@@ -222,7 +215,7 @@ ul.checklist{list-style:none;padding-left:32px}ul.checklist li{position:relative
 ul.checklist li.done{color:#94a3b8;text-decoration:line-through}ul.checklist li.done:before{background:#6366f1;border-color:#6366f1}
 @media print{body{background:#fff}.pg{box-shadow:none;margin:0 auto;page-break-after:always}h1.doc{display:none}}
 </style></head><body><h1 class="doc">${LN.esc(note.title || 'Untitled note')}</h1>
-${pages.map((p) => `<section class="pg ${p.paper}${p.bg ? ' hasbg' : ''}" style="height:${p.h}px;${PAPER_CSS[p.paper] || ''}">
+${pages.map((p) => `<section class="pg${p.bg ? ' hasbg' : ''}" style="${p.style};height:${p.h}px">
 ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}</div>${p.ink ? `<img class="ink" src="${p.ink}" alt="">` : ''}</section>`).join('\n')}
 </body></html>`;
     LN.download(`${LN.safeName(note.title)}.html`, html, 'text/html');
@@ -237,7 +230,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     const stage = $('#present-stage');
     stage.innerHTML = Pr.slides.map((p, i) => `
       <div class="slide" data-i="${i}" hidden>
-        <div class="page paper-${p.paper}${p.bg ? ' has-bg' : ''}" style="height:${p.h}px">
+        <div class="page${p.bg ? ' has-bg' : ''}" style="${p.style};height:${p.h}px">
           ${p.bg ? `<img class="page-bg" src="${p.bg}" alt="">` : ''}
           <div class="page-text">${p.html}</div>
           ${p.ink ? `<img class="page-ink" src="${p.ink}" alt="">` : ''}
@@ -290,6 +283,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     try { data = JSON.parse(await file.text()); } catch (e) { LN.toast('That file isn’t a LataNote note or backup.'); return; }
     if (data.type === 'latanote-note' && data.note && Array.isArray(data.note.pages)) {
       const n = data.note;
+      LN.mergePapers(data.papers);
       n.id = LN.uid(); n.recordings = []; n.cards = n.cards || [];
       const nbId = LN.state.ui.notebookId || (LN.state.notebooks[0] && LN.state.notebooks[0].id);
       if (!nbId) { const nb = { id: LN.uid(), name: 'Imported', color: LN.NB_COLORS[0], created: Date.now() }; LN.state.notebooks.push(nb); n.notebookId = nb.id; }
@@ -299,6 +293,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
       LN.touch(n); App.openNote(n.id);
       LN.toast(`Imported “${n.title || 'Untitled note'}”.`);
     } else if (data.type === 'latanote-notebook' && data.notebook && Array.isArray(data.notes)) {
+      LN.mergePapers(data.papers);
       const nb = Object.assign({}, data.notebook, { id: LN.uid(), created: Date.now() });
       delete nb.shared;
       LN.state.notebooks.push(nb);
@@ -370,7 +365,12 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     LN.audio.init(); LN.planner.init(); LN.study.init(); LN.extras.init();
     LN.on('ink-selection', (on) => document.body.classList.toggle('has-sel', !!on));
     $('#note-list').addEventListener('click', (e) => { const b = e.target.closest('[data-trash]'); if (b) { e.stopPropagation(); App.trashAction(b.dataset.trash, b.dataset.id); } });
-    $('#templates').addEventListener('click', (e) => { const b = e.target.closest('[data-tpl]'); if (b) E().applyTemplate(b.dataset.tpl); });
+    $('#templates').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-tpl], [data-utpl], [data-tpl-paper]'); if (!b) return;
+      if (b.dataset.utpl) E().applyUserTemplate(b.dataset.utpl);
+      else if (b.hasAttribute('data-tpl-paper')) LN.openPaperPicker('all');
+      else E().applyTemplate(b.dataset.tpl);
+    });
     LN.on('notes-changed', LN.debounce(() => { App.renderLibrary(); if (App.view === 'planner') LN.planner.render(); }, 300));
 
     // sidebar
@@ -420,7 +420,6 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     $('#fore-color').addEventListener('change', (e) => E().exec('foreColor', e.target.value));
     $('#fore-bar').style.background = $('#fore-color').value;
     $('#ink-color').addEventListener('input', (e) => App.setColor(e.target.value));
-    $('#paper-select').addEventListener('change', (e) => E().setPaper(e.target.value));
     $('#undo-btn').addEventListener('click', () => E().doUndo());
     $('#redo-btn').addEventListener('click', () => E().doRedo());
     $('#pen-only').checked = !!LN.state.settings.penOnly;
@@ -522,7 +521,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     if (r.select === 'delete') return App.deleteNotebook(id);
     if (r.select === 'export') {
       const notes = LN.state.notes.filter((n) => n.notebookId === id).map((n) => Object.assign({}, n, { recordings: [] }));
-      LN.download(`${LN.safeName(nb.name)}.latanote`, JSON.stringify({ type: 'latanote-notebook', version: 1, notebook: { name: nb.name, color: nb.color }, notes }), 'application/json');
+      LN.download(`${LN.safeName(nb.name)}.latanote`, JSON.stringify({ type: 'latanote-notebook', version: 1, notebook: { name: nb.name, color: nb.color }, notes, papers: LN.papersUsedBy(notes) }), 'application/json');
       LN.toast('Notebook file downloaded. Share it with your class or team; they can import it from Settings.');
       return;
     }

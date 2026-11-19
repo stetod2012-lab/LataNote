@@ -18,7 +18,7 @@ Everything is free. There are no paid plans.
 | **Handwriting to text** | On-device recognition (the browser's handwriting recognizer where available, otherwise bundled Tesseract OCR). Recognized handwriting becomes searchable and feeds the study tools. |
 | **Typing & documents** | Rich text on the same page as ink: headings, formatting, colors, lists, checklists, tables, links, images, quotes and code. Includes speech-to-text dictation and read aloud. |
 | **Templates** | Lecture (Cornell), meeting, to-do, daily journal, study guide, and sketch. |
-| **Paper** | Lined, grid, dotted, Cornell and blank. Add, reorder and delete pages. Zoom with Ctrl+scroll or pinch. |
+| **Paper & pages** | 13 paper styles: lined, lined without margin, legal pad, Cornell, checklist, handwriting practice, grid, engineering graph, dotted, isometric dots, music staff, storyboard and blank. Narrow, normal or wide line spacing (text size follows). 9 paper colors plus custom. Set the background for the whole note or for a single page, and pick a default for new notes. **Custom papers:** upload any image or PDF page (planner layout, worksheet, letterhead) as reusable paper. **Page templates:** save any of your pages as a template. **Add page:** blank, duplicate, from a template, copied from another note, or from a PDF or image. Zoom with Ctrl+scroll or pinch. |
 | **Audio** | Record lessons into a note. Ink written while recording replays in sync with the audio. |
 | **PDF & image annotation** | Import PDFs (bundled pdf.js) or images and write on every page. Drag and drop works too. |
 | **Study assistant** | Summaries and key terms, flashcards with spaced repetition, quizzes, "Ask your notes", and a **Tutor** chat. The tutor uses the browser's built-in on-device AI (Chrome's Prompt API) when available, or a built-in offline engine otherwise. |
@@ -75,6 +75,7 @@ manifest.webmanifest     install metadata
 sw.js                    service worker (offline support)
 css/                     base tokens, landing page and app styles
 js/core.js               storage, state, icons, dialogs
+js/paper.js              paper styles, spacing, colors, custom papers, page templates
 js/ink.js                ink engine and lasso
 js/editor.js             pages, text layer, templates, formatting, imports
 js/audio.js              recording and ink-synced playback

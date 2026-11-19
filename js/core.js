@@ -88,7 +88,8 @@
   LN.newPage = (html = '') => ({ id: LN.uid(), html, strokes: [], bg: null, bgH: 0 });
   LN.newNote = (notebookId, title = '') => {
     const now = Date.now();
-    return { id: LN.uid(), notebookId, title, paper: 'lined', created: now, updated: now, pages: [LN.newPage()], recordings: [], cards: [] };
+    const d = (LN.state.settings && LN.state.settings.paperDefault) || {};
+    return { id: LN.uid(), notebookId, title, paper: d.paper || 'lined', spacing: d.spacing || 'normal', color: d.color || '#ffffff', created: now, updated: now, pages: [LN.newPage()], recordings: [], cards: [] };
   };
   LN.getNote = (id) => LN.state.notes.find((n) => n.id === id);
   LN.getNotebook = (id) => LN.state.notebooks.find((n) => n.id === id);
@@ -194,6 +195,8 @@
     send: 'M22 2 11 13|M22 2l-7 20-4-9-9-4z',
     keyboard: 'M3 6h18v12H3z|M7 10h.01|M11 10h.01|M15 10h.01|M7 14h10',
     devices: 'M4 5h12v9H4z|M2 18h16|M18 9h4v11h-4z',
+    layout: 'M4 3h16v18H4z|M4 8h16|M4 13h16|M8 3v18',
+    bookmark: 'M6 3h12v18l-6-4-6 4z',
   };
   LN.icon = (name, cls = '') => {
     const d = P[name] || P.note;
