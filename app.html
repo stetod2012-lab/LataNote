@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>LataNote</title>
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/app.css">
+  <script>document.documentElement.dataset.theme = localStorage.getItem('latanote-theme') || 'light';</script>
+</head>
+<body class="app mode-type">
+<div class="shell" id="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar" aria-label="Library">
+    <div class="sb-top">
+      <a class="logo" href="index.html" title="LataNote home"><img src="assets/logo.svg" alt="" width="28" height="28"> LataNote</a>
+      <button class="icon-btn sb-close" data-action="toggle-sidebar" aria-label="Close sidebar"><i data-icon="x"></i></button>
+    </div>
+    <label class="search">
+      <i data-icon="search"></i>
+      <input id="search" type="search" placeholder="Search all notes" autocomplete="off">
+    </label>
+    <nav class="views" aria-label="Views">
+      <button class="view-btn active" data-view="notes"><i data-icon="book"></i> Notes</button>
+      <button class="view-btn" data-view="planner"><i data-icon="calendar"></i> Planner</button>
+    </nav>
+
+    <div class="sb-scroll">
+      <div class="sb-head"><span>Notebooks</span><button class="icon-btn sm" id="add-notebook" title="New notebook" aria-label="New notebook"><i data-icon="plus"></i></button></div>
+      <ul class="nb-list" id="notebook-list"></ul>
+
+      <div class="sb-head"><span id="notes-heading">Notes</span><button class="icon-btn sm" id="add-note" title="New note" aria-label="New note"><i data-icon="plus"></i></button></div>
+      <ul class="note-list" id="note-list"></ul>
+    </div>
+
+    <div class="sb-foot">
+      <button class="icon-btn" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode"><i data-icon="moon"></i></button>
+      <button class="icon-btn" id="backup-btn" title="Back up everything" aria-label="Back up everything"><i data-icon="download"></i></button>
+      <button class="icon-btn" id="import-btn" title="Import a note or backup" aria-label="Import a note or backup"><i data-icon="upload"></i></button>
+      <span class="sb-save" id="save-state">Saved</span>
+    </div>
+  </aside>
+  <div class="scrim" data-action="toggle-sidebar"></div>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- NOTES VIEW -->
+    <section class="view" id="view-notes">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" data-action="toggle-sidebar" aria-label="Open sidebar"><i data-icon="menu"></i></button>
+        <div class="title-wrap">
+          <span class="nb-chip" id="nb-chip"></span>
+          <input class="note-title" id="note-title" placeholder="Untitled note" aria-label="Note title">
+        </div>
+        <div class="seg" role="tablist" aria-label="Input mode">
+          <button class="seg-btn active" data-mode="type" title="Type (T)"><i data-icon="type"></i><span>Type</span></button>
+          <button class="seg-btn" data-mode="draw" title="Draw (D)"><i data-icon="pen"></i><span>Draw</span></button>
+        </div>
+        <div class="top-actions">
+          <button class="icon-btn rec-btn" id="rec-btn" title="Record audio" aria-label="Record audio"><i data-icon="mic"></i></button>
+          <button class="icon-btn" id="study-btn" title="Study assistant" aria-label="Study assistant"><i data-icon="sparkles"></i></button>
+          <button class="icon-btn" id="present-btn" title="Present" aria-label="Present"><i data-icon="present"></i></button>
+          <div class="menu-wrap">
+            <button class="icon-btn" id="more-btn" aria-haspopup="menu" aria-label="More"><i data-icon="more"></i></button>
+            <div class="menu" id="more-menu" role="menu" hidden>
+              <button role="menuitem" data-cmd="export-html"><i data-icon="download"></i> Export as HTML</button>
+              <button role="menuitem" data-cmd="print"><i data-icon="printer"></i> Print / Save as PDF</button>
+              <button role="menuitem" data-cmd="share"><i data-icon="share"></i> Share note file</button>
+              <button role="menuitem" data-cmd="duplicate"><i data-icon="copy"></i> Duplicate note</button>
+              <button role="menuitem" data-cmd="move"><i data-icon="folder"></i> Move to notebook…</button>
+              <hr>
+              <button role="menuitem" data-cmd="clear-ink"><i data-icon="eraser"></i> Clear all ink</button>
+              <button role="menuitem" data-cmd="delete" class="danger"><i data-icon="trash"></i> Delete note</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Context toolbar -->
+      <div class="toolbar" id="toolbar">
+        <div class="tb-group tb-type">
+          <select id="block-select" title="Text style" aria-label="Text style">
+            <option value="p">Paragraph</option>
+            <option value="h1">Heading 1</option>
+            <option value="h2">Heading 2</option>
+            <option value="h3">Heading 3</option>
+            <option value="blockquote">Quote</option>
+            <option value="pre">Code</option>
+          </select>
+          <span class="sep"></span>
+          <button class="tb-btn txt" data-exec="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+          <button class="tb-btn txt" data-exec="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+          <button class="tb-btn txt" data-exec="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+          <button class="tb-btn txt" data-exec="strikeThrough" title="Strikethrough"><s>S</s></button>
+          <label class="tb-btn color-pick" title="Text color"><span class="a-glyph">A</span><span class="bar" id="fore-bar"></span><input type="color" id="fore-color" value="#e11d48"></label>
+          <button class="tb-btn" data-exec="hiliteColor" data-arg="#fde68a" title="Highlight"><i data-icon="highlighter"></i></button>
+          <span class="sep"></span>
+          <button class="tb-btn" data-exec="insertUnorderedList" title="Bulleted list"><i data-icon="list"></i></button>
+          <button class="tb-btn" data-exec="insertOrderedList" title="Numbered list"><i data-icon="olist"></i></button>
+          <button class="tb-btn" data-cmd="checklist" title="Checklist"><i data-icon="checksquare"></i></button>
+          <span class="sep"></span>
+          <button class="tb-btn" data-exec="justifyLeft" title="Align left"><i data-icon="alignleft"></i></button>
+          <button class="tb-btn" data-exec="justifyCenter" title="Align center"><i data-icon="aligncenter"></i></button>
+          <span class="sep"></span>
+          <button class="tb-btn" data-cmd="table" title="Insert table"><i data-icon="table"></i></button>
+          <button class="tb-btn" data-cmd="link" title="Insert link"><i data-icon="link"></i></button>
+          <button class="tb-btn" data-cmd="image" title="Insert image"><i data-icon="image"></i></button>
+          <button class="tb-btn" data-exec="removeFormat" title="Clear formatting"><i data-icon="clear"></i></button>
+        </div>
+
+        <div class="tb-group tb-draw">
+          <button class="tb-btn tool active" data-tool="pen" title="Pen (P)"><i data-icon="pen"></i></button>
+          <button class="tb-btn tool" data-tool="highlighter" title="Highlighter (H)"><i data-icon="highlighter"></i></button>
+          <button class="tb-btn tool" data-tool="eraser" title="Eraser (E)"><i data-icon="eraser"></i></button>
+          <span class="sep"></span>
+          <button class="tb-btn tool" data-tool="line" title="Line"><i data-icon="line"></i></button>
+          <button class="tb-btn tool" data-tool="arrow" title="Arrow"><i data-icon="arrow"></i></button>
+          <button class="tb-btn tool" data-tool="rect" title="Rectangle"><i data-icon="rect"></i></button>
+          <button class="tb-btn tool" data-tool="ellipse" title="Ellipse"><i data-icon="ellipse"></i></button>
+          <span class="sep"></span>
+          <div class="swatches" id="swatches"></div>
+          <label class="swatch custom" title="Custom color"><input type="color" id="ink-color" value="#1f2937"></label>
+          <span class="sep"></span>
+          <div class="sizes" id="sizes">
+            <button class="size" data-size="1.5" title="Fine"><span style="--s:3px"></span></button>
+            <button class="size active" data-size="3" title="Medium"><span style="--s:5px"></span></button>
+            <button class="size" data-size="6" title="Bold"><span style="--s:8px"></span></button>
+            <button class="size" data-size="10" title="Heavy"><span style="--s:12px"></span></button>
+          </div>
+          <span class="sep"></span>
+          <button class="tb-btn" id="undo-btn" title="Undo (Ctrl+Z)"><i data-icon="undo"></i></button>
+          <button class="tb-btn" id="redo-btn" title="Redo (Ctrl+Shift+Z)"><i data-icon="redo"></i></button>
+          <label class="toggle" title="Ignore finger touches so only a stylus draws (palm rejection)"><input type="checkbox" id="pen-only"> <span>Stylus only</span></label>
+        </div>
+
+        <div class="tb-group tb-right">
+          <select id="paper-select" title="Paper" aria-label="Paper style">
+            <option value="lined">Lined</option>
+            <option value="grid">Grid</option>
+            <option value="dot">Dotted</option>
+            <option value="cornell">Cornell</option>
+            <option value="blank">Blank</option>
+          </select>
+          <button class="tb-btn" data-cmd="add-page" title="Add page"><i data-icon="pageplus"></i></button>
+          <button class="tb-btn" data-cmd="import-pdf" title="Import PDF or image to annotate"><i data-icon="filepdf"></i></button>
+          <span class="sep"></span>
+          <button class="tb-btn" data-zoom="-1" title="Zoom out">−</button>
+          <button class="tb-btn zoom-label" data-zoom="0" id="zoom-label" title="Fit to width">100%</button>
+          <button class="tb-btn" data-zoom="1" title="Zoom in">+</button>
+        </div>
+      </div>
+
+      <div class="pages-area" id="pages-area">
+        <div class="pages" id="pages"></div>
+        <div class="empty" id="empty" hidden>
+          <img src="assets/logo.svg" alt="" width="56" height="56">
+          <h2>No note selected</h2>
+          <p>Create a note to start writing, drawing and recording.</p>
+          <button class="btn btn-primary" data-cmd="new-note"><i data-icon="plus"></i> New note</button>
+        </div>
+      </div>
+
+      <!-- Recordings -->
+      <div class="rec-bar" id="rec-bar">
+        <div class="rec-live" id="rec-live" hidden>
+          <span class="rec-dot"></span> Recording <span id="rec-time">0:00</span>
+          <span class="rec-hint">Ink you add now is synced to this recording.</span>
+          <button class="btn btn-sm btn-danger" id="rec-stop"><i data-icon="stop"></i> Stop</button>
+        </div>
+        <div class="rec-list" id="rec-list"></div>
+        <audio id="player" controls hidden></audio>
+      </div>
+    </section>
+
+    <!-- PLANNER VIEW -->
+    <section class="view" id="view-planner" hidden>
+      <header class="topbar">
+        <button class="icon-btn menu-btn" data-action="toggle-sidebar" aria-label="Open sidebar"><i data-icon="menu"></i></button>
+        <h1 class="view-title" id="cal-title">Planner</h1>
+        <div class="top-actions">
+          <button class="icon-btn" id="cal-prev" aria-label="Previous month"><i data-icon="chevleft"></i></button>
+          <button class="btn btn-ghost btn-sm" id="cal-today">Today</button>
+          <button class="icon-btn" id="cal-next" aria-label="Next month"><i data-icon="chevright"></i></button>
+        </div>
+      </header>
+      <div class="planner">
+        <div class="calendar">
+          <div class="cal-dow"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+        <aside class="day-panel">
+          <h2 id="day-title">Today</h2>
+          <form class="event-form" id="event-form" autocomplete="off">
+            <input name="title" placeholder="Add a class, task, exam…" required aria-label="Title">
+            <div class="ef-row">
+              <input name="time" type="time" aria-label="Time">
+              <select name="type" aria-label="Type">
+                <option value="class">Class</option>
+                <option value="task">Task</option>
+                <option value="exam">Exam</option>
+                <option value="event">Event</option>
+              </select>
+            </div>
+            <div class="ef-row">
+              <select name="noteId" id="ef-note" aria-label="Linked note"></select>
+              <button class="btn btn-primary btn-sm" type="submit"><i data-icon="plus"></i> Add</button>
+            </div>
+          </form>
+          <ul class="items" id="day-items"></ul>
+          <h3>Next 14 days</h3>
+          <ul class="items compact" id="upcoming"></ul>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <!-- STUDY DRAWER -->
+  <aside class="drawer" id="study" hidden aria-label="Study assistant">
+    <header class="drawer-head">
+      <div><i data-icon="sparkles"></i> <strong>Study assistant</strong></div>
+      <button class="icon-btn" id="study-close" aria-label="Close study assistant"><i data-icon="x"></i></button>
+    </header>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="summary">Summary</button>
+      <button class="tab" data-tab="cards">Flashcards</button>
+      <button class="tab" data-tab="quiz">Quiz</button>
+      <button class="tab" data-tab="ask">Ask</button>
+    </div>
+    <div class="drawer-body" id="study-body"></div>
+    <p class="drawer-foot"><i data-icon="lock"></i> Runs on your device. Your notes never leave this browser.</p>
+  </aside>
+</div>
+
+<!-- PRESENTATION -->
+<div class="present" id="present" hidden>
+  <div class="present-stage" id="present-stage"></div>
+  <div class="laser" id="laser" hidden></div>
+  <div class="present-bar">
+    <button class="icon-btn" id="pr-prev" aria-label="Previous"><i data-icon="chevleft"></i></button>
+    <span id="pr-count">1 / 1</span>
+    <button class="icon-btn" id="pr-next" aria-label="Next"><i data-icon="chevright"></i></button>
+    <button class="icon-btn" id="pr-laser" title="Laser pointer (L)" aria-label="Laser pointer"><i data-icon="laser"></i></button>
+    <button class="icon-btn" id="pr-close" title="Exit (Esc)" aria-label="Exit presentation"><i data-icon="x"></i></button>
+  </div>
+</div>
+
+<!-- DIALOG -->
+<dialog class="dlg" id="dlg">
+  <form method="dialog" id="dlg-form">
+    <h3 id="dlg-title"></h3>
+    <p id="dlg-msg"></p>
+    <input id="dlg-input" autocomplete="off">
+    <select id="dlg-select"></select>
+    <div class="dlg-colors" id="dlg-colors"></div>
+    <div class="dlg-actions">
+      <button class="btn btn-ghost" value="cancel" formnovalidate>Cancel</button>
+      <button class="btn btn-primary" value="ok" id="dlg-ok">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="file-image" accept="image/*" hidden>
+<input type="file" id="file-pdf" accept="application/pdf,image/*" hidden>
+<input type="file" id="file-import" accept=".latanote,.json,application/json" hidden>
+
+<script src="js/core.js"></script>
+<script src="js/ink.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/planner.js"></script>
+<script src="js/study.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

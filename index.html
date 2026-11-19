@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LataNote — one connected space for thinking, creating, learning and getting things done</title>
+  <meta name="description" content="LataNote combines handwriting, typing, drawing, document editing, audio recording, PDF annotation, planning, presenting and an AI-powered study assistant in one digital notebook.">
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <header class="nav" id="top">
+    <div class="wrap nav-inner">
+      <a class="logo" href="#top" aria-label="LataNote home">
+        <img src="assets/logo.svg" alt="" width="30" height="30">
+        LataNote
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#write">Your way</a>
+        <a href="#study">Study</a>
+        <a href="#plans">Plans</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="nav-cta">
+        <button class="theme-btn" id="theme-btn" aria-label="Toggle dark mode">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <a class="btn btn-primary" href="app.html">Open LataNote</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="dot"></span> Notebook · Planner · Studio · Study assistant</p>
+          <h1>Not just a place to write things down.</h1>
+          <p class="lead">LataNote is one connected space for thinking, creating, learning and getting things done. Write by hand, type structured documents, draw detailed diagrams, record whole lessons, mark up PDFs and plan your term. Then let the study assistant turn your notes into summaries, flashcards and quizzes.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="app.html">Start writing. It’s free</a>
+            <a class="btn btn-ghost btn-lg" href="#features">See what’s inside</a>
+          </div>
+          <p class="hero-note">Runs in your browser. No account needed. Your notes stay on your device.</p>
+        </div>
+
+        <div class="hero-art" aria-hidden="true">
+          <div class="mock">
+            <div class="mock-bar">
+              <span></span><span></span><span></span>
+              <div class="mock-tools">
+                <i class="t on"></i><i class="t"></i><i class="t"></i>
+                <b style="background:#1f2937"></b><b style="background:#2563eb"></b><b style="background:#e11d48"></b><b style="background:#10b981"></b>
+              </div>
+            </div>
+            <div class="mock-body">
+              <div class="mock-side">
+                <div class="ms-h"></div>
+                <div class="ms-i" style="--c:#6366f1"></div>
+                <div class="ms-i on" style="--c:#10b981"></div>
+                <div class="ms-i" style="--c:#f59e0b"></div>
+                <div class="ms-i" style="--c:#e11d48"></div>
+              </div>
+              <div class="mock-page">
+                <div class="mp-title">Cell Biology: Lecture 4</div>
+                <svg class="mp-ink" viewBox="0 0 420 300">
+                  <text x="6" y="40" class="hw">Mitochondria = powerhouse</text>
+                  <path class="hl" d="M6 30 H232" />
+                  <text x="6" y="80" class="hw small">makes ATP via respiration →</text>
+                  <ellipse cx="300" cy="170" rx="92" ry="56" class="cell" />
+                  <path class="cell-in" d="M230 170c20-30 40 30 60 0s40 30 60 0 30 20 40 0" />
+                  <path class="arrow" d="M150 110 C 190 120, 200 135, 222 150" />
+                  <path class="arrow" d="M214 142 l8 8 -11 2" />
+                  <text x="6" y="140" class="hw small blue">inner membrane</text>
+                  <text x="6" y="172" class="hw small blue">folds = cristae</text>
+                  <path class="underline" d="M6 180 C 60 186, 100 176, 130 182" />
+                  <text x="248" y="262" class="hw small red">exam!</text>
+                  <path class="circle" d="M240 250c10-22 70-22 76 4s-66 22-76-4z" />
+                </svg>
+                <div class="mp-audio"><span class="rec"></span> Lecture 4 · 42:18 <span class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="float-card fc-1">
+            <div class="fc-label">Flashcard</div>
+            <div class="fc-q">What do cristae do?</div>
+            <div class="fc-a">Increase membrane surface area for ATP production</div>
+          </div>
+          <div class="float-card fc-2">
+            <div class="fc-label">Today</div>
+            <div class="fc-row"><i style="background:#6366f1"></i> Biology lecture <span>9:00</span></div>
+            <div class="fc-row"><i style="background:#e11d48"></i> Chem quiz <span>13:30</span></div>
+            <div class="fc-row done"><i style="background:#10b981"></i> Read ch. 5</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROLES STRIP -->
+    <section class="strip" aria-label="What LataNote replaces">
+      <div class="strip-track">
+        <span>Notebook</span><span>Textbook</span><span>Planner</span><span>Document editor</span><span>Recording studio</span><span>PDF annotator</span><span>Presentation tool</span><span>Study assistant</span>
+        <span aria-hidden="true">Notebook</span><span aria-hidden="true">Textbook</span><span aria-hidden="true">Planner</span><span aria-hidden="true">Document editor</span><span aria-hidden="true">Recording studio</span><span aria-hidden="true">PDF annotator</span><span aria-hidden="true">Presentation tool</span><span aria-hidden="true">Study assistant</span>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="section" id="features">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Everything in one place</p>
+          <h2>Powerful tools that don’t get in your way</h2>
+          <p class="sub">Every tool is one tap away, with no complicated workflows to learn. Use one, or use all of them on the same page.</p>
+        </div>
+        <div class="features">
+          <article class="feature">
+            <div class="f-ico" style="--c:#6366f1"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+            <h3>Natural handwriting</h3>
+            <p>Pressure-sensitive pen, highlighter and eraser with smooth, low-latency ink. Turn on palm rejection so only your stylus draws.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#0ea5e9"><svg class="ico" viewBox="0 0 24 24"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg></div>
+            <h3>Typing &amp; documents</h3>
+            <p>Headings, lists, checklists, tables, links and images. Structure a full document, or type a quick line between your sketches.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#10b981"><svg class="ico" viewBox="0 0 24 24"><path d="M5 19 19 5"/><path d="M9 5h10v10"/><path d="M4 5h6v6H4z"/></svg></div>
+            <h3>Drawing &amp; diagrams</h3>
+            <p>Lines, arrows, rectangles and ellipses on blank, lined, grid, dotted or Cornell paper. Sketch it as fast as you think it.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#e11d48"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></div>
+            <h3>Audio that syncs to ink</h3>
+            <p>Record an entire lesson while you write. On playback, your ink appears in step with the audio, so you can hear what was said as each note was written.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#f59e0b"><svg class="ico" viewBox="0 0 24 24"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/><path d="M8 14l3 3 5-6"/></svg></div>
+            <h3>PDF &amp; image annotation</h3>
+            <p>Import slides, worksheets and textbook chapters. Every page becomes paper you can write, highlight and type on.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#8b5cf6"><svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18v15H3z"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/></svg></div>
+            <h3>Academic planner</h3>
+            <p>Classes, tasks, exams and events on one calendar, each linked to the notes that go with it. Upcoming deadlines always in view.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#14b8a6"><svg class="ico" viewBox="0 0 24 24"><path d="M2 4h20"/><path d="M4 4v11h16V4"/><path d="M12 15v4"/><path d="M8 21l4-2 4 2"/></svg></div>
+            <h3>Present from your notes</h3>
+            <p>Turn any notebook into a full-screen presentation with a built-in laser pointer. No exporting or reformatting.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#ec4899"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></div>
+            <h3>AI study assistant</h3>
+            <p>Summaries, key terms, flashcards with spaced repetition, practice quizzes and answers drawn from your own notes.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#64748b"><svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg></div>
+            <h3>Organize &amp; share</h3>
+            <p>Color-coded notebooks, instant search across everything, and one-click export to HTML, PDF or a shareable note file.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- YOUR WAY -->
+    <section class="section alt" id="write">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Flexible by design</p>
+          <h2>However you think, there’s room for it</h2>
+        </div>
+
+        <div class="row">
+          <div class="row-copy">
+            <h3>Write every sentence by hand, or type it</h3>
+            <p>Each page has two layers: ink and text. Switch between <strong>Type</strong> and <strong>Draw</strong> with a single tap, and both stay together on the same page, the way they would on paper.</p>
+            <ul class="checks">
+              <li>Pressure-sensitive pen, highlighter and stroke eraser</li>
+              <li>Rich text with headings, checklists and tables</li>
+              <li>Five paper styles, including Cornell notes</li>
+            </ul>
+          </div>
+          <div class="row-art">
+            <div class="paper-card lined">
+              <div class="pc-typed"><strong>Photosynthesis</strong>: light → chemical energy</div>
+              <svg viewBox="0 0 360 150"><text x="4" y="52" class="hw">6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂</text><path class="hl" d="M4 42 H300"/><text x="4" y="100" class="hw blue small">happens in the chloroplast ✓</text><path class="underline" d="M4 110 C 80 116, 160 104, 240 112"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="row reverse">
+          <div class="row-copy">
+            <h3>Record whole lessons. Never miss a word.</h3>
+            <p>Press record and keep writing. Each stroke is timestamped against the recording, so on playback your notes rebuild in time with the audio and you can find the moment a concept was explained.</p>
+            <ul class="checks">
+              <li>Unlimited recordings per note</li>
+              <li>Ink replays in step with the audio</li>
+              <li>Download recordings any time</li>
+            </ul>
+          </div>
+          <div class="row-art">
+            <div class="audio-card">
+              <div class="ac-head"><span class="rec"></span> Recording · 12:47</div>
+              <div class="ac-wave">
+                <i style="--h:30%"></i><i style="--h:55%"></i><i style="--h:80%"></i><i style="--h:45%"></i><i style="--h:65%"></i><i style="--h:90%"></i><i style="--h:40%"></i><i style="--h:70%"></i><i style="--h:35%"></i><i style="--h:60%"></i><i style="--h:85%"></i><i style="--h:50%"></i><i style="--h:30%"></i><i style="--h:75%"></i><i style="--h:55%"></i><i style="--h:40%"></i><i style="--h:65%"></i><i style="--h:30%"></i><i style="--h:50%"></i><i style="--h:80%"></i>
+              </div>
+              <div class="ac-track"><span style="width:42%"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-copy">
+            <h3>Plan the term and the day</h3>
+            <p>Add classes, assignments, exams and events to a calendar that lives next to your notes. Link an event to the note it belongs to, and it’s one click away when the lecture starts.</p>
+            <ul class="checks">
+              <li>Month view with color-coded items</li>
+              <li>Tasks you can tick off</li>
+              <li>A rolling two-week “upcoming” list</li>
+            </ul>
+          </div>
+          <div class="row-art">
+            <div class="cal-card">
+              <div class="cc-head">November</div>
+              <div class="cc-grid">
+                <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+                <i></i><i></i><i></i><i></i><i></i><i></i><i>1</i>
+                <i>2</i><i>3</i><i class="ev a">4</i><i>5</i><i class="ev b">6</i><i>7</i><i>8</i>
+                <i>9</i><i class="ev a">10</i><i>11</i><i class="ev c">12</i><i>13</i><i>14</i><i>15</i>
+                <i>16</i><i class="ev a">17</i><i>18</i><i class="today">19</i><i class="ev b">20</i><i>21</i><i>22</i>
+                <i>23</i><i class="ev a">24</i><i>25</i><i class="ev c">26</i><i>27</i><i>28</i><i>29</i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STUDY -->
+    <section class="section" id="study">
+      <div class="wrap study-grid">
+        <div>
+          <p class="eyebrow">Learn, don’t just store</p>
+          <h2>A study assistant built into every note</h2>
+          <p class="sub left">Open the assistant next to any note to turn what you wrote into material you can study.</p>
+          <div class="study-list">
+            <div><strong>Summarize</strong><span>Pulls out the most important sentences and key terms, and adds the summary to your note in one click.</span></div>
+            <div><strong>Flashcards</strong><span>Generated from definitions in your notes. Spaced repetition brings back the cards you miss more often.</span></div>
+            <div><strong>Quiz</strong><span>Multiple-choice and fill-in-the-blank questions built from your material, with your score at the end.</span></div>
+            <div><strong>Ask your notes</strong><span>Type a question and get the most relevant passages from one note or every notebook.</span></div>
+          </div>
+        </div>
+        <div class="study-art" aria-hidden="true">
+          <div class="quiz-card">
+            <div class="qc-top"><span>Question 3 of 5</span><span class="qc-score">2 ✓</span></div>
+            <p class="qc-q">“Folds of the inner mitochondrial membrane” describes…</p>
+            <div class="qc-opt">Ribosomes</div>
+            <div class="qc-opt right">Cristae</div>
+            <div class="qc-opt">Thylakoids</div>
+            <div class="qc-opt">Golgi apparatus</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLANS -->
+    <section class="section alt" id="plans">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Devices &amp; plans</p>
+          <h2>Start free and grow into it</h2>
+          <p class="sub">LataNote runs in any modern browser on desktop, tablet and phone. Some tools and advanced capabilities can depend on your operating system, subscription plan and account configuration.</p>
+        </div>
+        <div class="plans">
+          <article class="plan">
+            <h3>Free</h3>
+            <p class="price">$0</p>
+            <p class="plan-sub">Everything you need to take great notes.</p>
+            <ul class="checks">
+              <li>Unlimited notebooks &amp; pages</li>
+              <li>Handwriting, typing &amp; drawing</li>
+              <li>Audio recording &amp; PDF import</li>
+              <li>Planner &amp; presentation mode</li>
+              <li>On-device study assistant</li>
+            </ul>
+            <a class="btn btn-ghost" href="app.html">Open the app</a>
+          </article>
+          <article class="plan featured">
+            <span class="badge">Most popular</span>
+            <h3>Plus</h3>
+            <p class="price">$3.99<small>/month</small></p>
+            <p class="plan-sub">For students and professionals who live in their notes.</p>
+            <ul class="checks">
+              <li>Everything in Free</li>
+              <li>Sync across all your devices</li>
+              <li>Handwriting recognition &amp; search</li>
+              <li>Advanced AI tutoring &amp; explanations</li>
+              <li>Real-time collaboration</li>
+            </ul>
+            <a class="btn btn-primary" href="app.html">Try it now</a>
+          </article>
+          <article class="plan">
+            <h3>Campus &amp; Teams</h3>
+            <p class="price">Custom</p>
+            <p class="plan-sub">For schools, classrooms and organizations.</p>
+            <ul class="checks">
+              <li>Everything in Plus</li>
+              <li>Shared class notebooks</li>
+              <li>Admin console &amp; SSO</li>
+              <li>Managed device deployment</li>
+              <li>Priority support</li>
+            </ul>
+            <a class="btn btn-ghost" href="#faq">Learn more</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="wrap narrow">
+        <div class="section-head">
+          <p class="eyebrow">FAQ</p>
+          <h2>Questions, answered</h2>
+        </div>
+        <details>
+          <summary>Do I need an account?</summary>
+          <p>No. Open the app and start writing. Your notebooks, recordings and planner are saved in your browser’s local storage on this device. You can export a full backup any time and restore it on another device.</p>
+        </details>
+        <details>
+          <summary>Does it work with a stylus?</summary>
+          <p>Yes. LataNote reads pen pressure from styluses such as Apple Pencil, Surface Pen and S Pen. Turn on <em>Stylus only</em> in the drawing toolbar so a resting palm doesn’t leave marks.</p>
+        </details>
+        <details>
+          <summary>Where does the study assistant send my notes?</summary>
+          <p>Nowhere. The built-in assistant runs entirely in your browser, analyzing your text to produce summaries, flashcards, quizzes and answers. Your notes never leave your device.</p>
+        </details>
+        <details>
+          <summary>Can I annotate PDFs?</summary>
+          <p>Yes. Import a PDF and every page is added to your note as a background you can write, draw, highlight and type over. You can also import images such as photos of a whiteboard.</p>
+        </details>
+        <details>
+          <summary>How do I share or print my notes?</summary>
+          <p>Use the note menu to export a self-contained HTML file, print or save as PDF, or share a <code>.latanote</code> file that someone else can import into their own LataNote.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+      <div class="wrap cta-inner">
+        <h2>Capture it. Understand it. Get it done.</h2>
+        <p>A complete digital ecosystem for thinking, creating, learning, organizing and getting things done.</p>
+        <a class="btn btn-lg cta-btn" href="app.html">Open LataNote</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="logo" href="#top"><img src="assets/logo.svg" alt="" width="30" height="30"> LataNote</a>
+      <nav aria-label="Footer">
+        <a href="#features">Features</a>
+        <a href="#study">Study</a>
+        <a href="#plans">Plans</a>
+        <a href="#faq">FAQ</a>
+        <a href="app.html">Open app</a>
+      </nav>
+      <p>© <span id="year"></span> LataNote</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var saved = localStorage.getItem('latanote-theme');
+      if (saved) root.dataset.theme = saved;
+      document.getElementById('theme-btn').addEventListener('click', function () {
+        var next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        localStorage.setItem('latanote-theme', next);
+      });
+      document.getElementById('year').textContent = new Date().getFullYear();
+    })();
+  </script>
+</body>
+</html>
