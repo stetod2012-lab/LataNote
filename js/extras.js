@@ -30,13 +30,18 @@
     const exit = document.exitFullscreen || document.webkitExitFullscreen;
     if (fsEl()) { await exit.call(document); return; }
     if (document.body.classList.contains('is-fullscreen')) { document.body.classList.remove('is-fullscreen'); X.updateFsButton(); return; }
-    if (req) {
+    // Safari (Mac, iPad, iPhone) warns about typing in browser full screen, and installed apps are already
+    // full screen, so there we use LataNote's own distraction-free mode instead.
+    const ua = navigator.userAgent;
+    const safari = /safari/i.test(ua) && !/chrome|chromium|crios|fxios|edg|opr|android/i.test(ua);
+    const ios = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const installed = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+    if (req && !safari && !ios && !installed) {
       try { await req.call(root, { navigationUI: 'hide' }); return; } catch (e) { /* fall through to focus mode */ }
     }
-    // iPhone Safari has no full-screen API for pages: use focus mode instead
     document.body.classList.add('is-fullscreen');
     X.updateFsButton();
-    LN.toast('Focus mode on. For true full screen on iPhone, use Share → Add to Home Screen.');
+    LN.toast('Full screen. Press F or Esc to exit.');
   };
   document.addEventListener('fullscreenchange', () => { if (!fsEl()) document.body.classList.remove('is-fullscreen'); X.updateFsButton(); });
   document.addEventListener('webkitfullscreenchange', () => { if (!fsEl()) document.body.classList.remove('is-fullscreen'); X.updateFsButton(); });
@@ -341,6 +346,7 @@
       <tr><td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd></td><td>New note</td></tr>
       <tr><td><kbd>Ctrl</kbd>+scroll / pinch</td><td>Zoom pages</td></tr>
       <tr><td><kbd>F</kbd></td><td>Full screen</td></tr>
+      <tr><td><kbd>\\</kbd></td><td>Minimize or show the toolbar</td></tr>
       <tr><td><kbd>?</kbd></td><td>Show this list</td></tr>
       <tr><td><kbd>←</kbd> <kbd>→</kbd> <kbd>L</kbd> <kbd>Esc</kbd></td><td>Presenting: previous, next, laser, exit</td></tr>
       <tr><td><kbd>Space</kbd>, <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>Flashcards: flip, grade</td></tr>

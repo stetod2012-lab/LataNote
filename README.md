@@ -61,6 +61,7 @@ Audio recordings stay on the device that recorded them. They aren't included in 
 | `P` / `H` / `E` / `L` | Pen / highlighter / eraser / lasso |
 | `Del` | Delete lasso selection |
 | `F` | Full screen |
+| `\` | Minimize or show the toolbar |
 | `?` | Shortcut list |
 | `Ctrl/⌘ + Z`, `Ctrl/⌘ + Shift + Z` | Undo / redo ink |
 | `Ctrl/⌘ + K` | Search notes |

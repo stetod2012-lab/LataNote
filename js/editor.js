@@ -280,6 +280,7 @@
     document.body.classList.toggle('mode-draw', m === 'draw');
     document.body.classList.toggle('mode-type', m === 'type');
     $$('.mode-seg .seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === m));
+    if (LN.app && LN.app.updateMini) LN.app.updateMini();
     E.pages.forEach((r) => { r.text.contentEditable = m === 'type' ? 'true' : 'false'; });
     // leave text fields when drawing so single-key tool shortcuts work
     if (m === 'draw' && document.activeElement && (document.activeElement.classList.contains('page-text') || document.activeElement.id === 'note-title')) document.activeElement.blur();

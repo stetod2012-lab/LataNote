@@ -805,3 +805,53 @@ html[data-fx] .note-top { background: color-mix(in srgb, var(--surface) 55%, tra
 .style-opt small { color: var(--text-3); font-size: .76rem; font-weight: 400; }
 .style-opt.on { background: var(--brand-50); }
 .style-opt.on b { color: var(--brand); }
+
+
+/* ===================== v8: no accidental selection ===================== */
+body.app { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+body.app input, body.app textarea, body.app select, body.app [contenteditable="true"], body.app [contenteditable="true"] *,
+body.app .drawer-body p, body.app .drawer-body li, body.app .msg, body.app #panel-body textarea, body.app .st-answers p { -webkit-user-select: text; user-select: text; }
+.page, .page-wrap, .page-ink, .thumb, .card, .tile { -webkit-touch-callout: none; }
+body.mode-draw .page-text, body.mode-draw .page-text * { -webkit-user-select: none !important; user-select: none !important; }
+.page-text:focus { outline: none; }
+
+/* ===================== v8: minimizable toolbar ===================== */
+.tb-main .tb-group, .tb-right { transition: max-width .32s cubic-bezier(.2, .8, .2, 1), opacity .2s ease, padding .32s, margin .32s, border-width .32s; max-width: 1400px; }
+.tb-main .tb-group { overflow: hidden; padding: 2px 0; }
+body.tb-collapsed .tb-main .tb-group { max-width: 0; opacity: 0; pointer-events: none; }
+body.tb-collapsed .tb-right { max-width: 0; opacity: 0; padding: 0; margin: 0; border-width: 0; overflow: hidden; pointer-events: none; }
+.tb-collapse { color: var(--text-3); margin-left: 2px; }
+.tb-mini { display: none; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border: 0; border-radius: 9px; background: var(--surface-2); color: var(--text); cursor: pointer; margin-left: 4px; }
+.tb-mini .ico { width: 17px; height: 17px; }
+.mini-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--border); }
+.mini-aa { font-weight: 800; font-family: var(--font-serif); }
+body.tb-collapsed .tb-mini { display: inline-flex; animation: fade-in .25s ease; }
+body.tb-collapsed .toolbar { padding-bottom: 0; }
+
+/* sliding Type / Draw switch */
+.mode-seg { position: relative; isolation: isolate; }
+.mode-seg::before { content: ""; position: absolute; z-index: -1; top: 2px; bottom: 2px; left: 2px; width: calc(50% - 3px); border-radius: 8px; background: var(--brand); box-shadow: 0 2px 6px color-mix(in srgb, var(--brand) 35%, transparent); transition: transform .28s cubic-bezier(.2, .8, .2, 1); }
+body.mode-draw .mode-seg::before { transform: translateX(calc(100% + 2px)); }
+.mode-seg .seg-btn { flex: 1 1 0; justify-content: center; min-width: 84px; background: transparent !important; box-shadow: none !important; transition: color .2s; }
+.mode-seg .seg-btn.active { color: #fff; }
+[data-theme="dark"] .mode-seg .seg-btn.active { color: #0f1120; }
+@media (max-width: 760px) { .mode-seg .seg-btn { min-width: 44px; } }
+
+/* ===================== v8: smooth motion ===================== */
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(-6px) scale(.97); } }
+@keyframes dlg-in { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+@keyframes drawer-in { from { opacity: 0; transform: translateX(28px); } }
+@keyframes sheet-in { from { transform: translateY(40px); opacity: 0; } }
+.popover:not([hidden]) { animation: pop-in .16s cubic-bezier(.2, .8, .2, 1); transform-origin: top center; }
+.dlg[open] { animation: dlg-in .22s cubic-bezier(.2, .8, .2, 1); }
+.dlg[open]::backdrop { animation: fade-in .22s ease; }
+.view:not([hidden]) { animation: fade-in .22s ease; }
+.drawer:not([hidden]) { animation: drawer-in .28s cubic-bezier(.2, .8, .2, 1); }
+@media (max-width: 900px) { .drawer:not([hidden]) { animation: sheet-in .3s cubic-bezier(.2, .8, .2, 1); } }
+.card, .tile, .tpl { animation: fade-in .3s ease both; }
+.icon-btn, .tb-btn, .round-btn, .back-btn, .nav-item, .tr, .crumb, .chip, .sec-tab, .btn { transition: background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .12s ease, opacity .15s ease; }
+.tb-btn:active, .round-btn:active, .icon-btn:active, .back-btn:active, .tile:active, .card-thumb:active { transform: scale(.95); }
+.timer-pop:not([hidden]) { animation: pop-in .16s ease; transform-origin: bottom left; }
+.lib, .pages-area, .sb-scroll, .drawer-body { scroll-behavior: auto; -webkit-overflow-scrolling: touch; }
+.page-wrap { animation: fade-in .25s ease both; }

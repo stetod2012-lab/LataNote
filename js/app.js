@@ -282,6 +282,8 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     else { App.setTool('pen'); LN.tool.color = toolColors.pen = c; }
     if (LN.tool.name === 'lasso') { App.setTool('pen'); LN.tool.color = toolColors.pen = c; }
     App.renderSwatches();
+    if (App.updateMini) App.updateMini();
+    if (App.updateMini) App.updateMini();
   };
 
   /* ---------- init ---------- */
@@ -338,14 +340,34 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     if (LN.state.settings.toolStyles) Object.assign(LN.toolStyles, LN.state.settings.toolStyles);
 
     // more menu
+    // ••• menu floats above everything (it used to slide under the toolbar)
     const menu = $('#more-menu');
     $('#more-btn').addEventListener('click', (e) => {
-      e.stopPropagation(); menu.hidden = !menu.hidden;
       if (E().note) $('#pin-label').textContent = E().note.pinned ? 'Unpin note' : 'Pin note';
-      LN.extras.updateSpeakLabel();
+      LN.extras.updateSpeakLabel(); LN.extras.updateFsButton();
+      LN.popover(e.currentTarget, menu.innerHTML, (b) => { if (b.dataset.cmd) App.noteCmd(b.dataset.cmd); }, { alignRight: true, cls: 'more-pop' });
     });
-    menu.addEventListener('click', (e) => { const b = e.target.closest('[data-cmd]'); if (!b) return; menu.hidden = true; App.noteCmd(b.dataset.cmd); });
-    document.addEventListener('click', (e) => { if (!menu.hidden && !e.target.closest('.menu-wrap')) menu.hidden = true; });
+
+    // minimize / restore the toolbar
+    App.setToolbarCollapsed = (on, quiet) => {
+      document.body.classList.toggle('tb-collapsed', !!on);
+      LN.state.settings.tbCollapsed = !!on;
+      const b = $('#tb-collapse');
+      b.innerHTML = LN.icon(on ? 'chevdown' : 'chevup');
+      b.title = on ? 'Show all tools (\\)' : 'Minimize toolbar (\\)';
+      App.updateMini();
+      if (!quiet) LN.save();
+    };
+    App.updateMini = () => {
+      const m = $('#tb-mini'); if (!m) return;
+      if (E().mode === 'draw') {
+        const t = LN.tool.name, ico = { pen: 'pen', pencil: 'pencil', highlighter: 'highlighter', eraser: 'eraser', lasso: 'lasso' }[t] || t;
+        m.innerHTML = `${LN.icon(ico)}${['eraser', 'lasso'].includes(t) ? '' : `<span class="mini-dot" style="background:${LN.tool.color}"></span>`}`;
+      } else m.innerHTML = '<span class="mini-aa">Aa</span>';
+    };
+    $('#tb-collapse').addEventListener('click', () => App.setToolbarCollapsed(!document.body.classList.contains('tb-collapsed')));
+    $('#tb-mini').addEventListener('click', () => App.setToolbarCollapsed(false));
+    App.setToolbarCollapsed(!!LN.state.settings.tbCollapsed, true);
     $('#empty').addEventListener('click', (e) => { if (e.target.closest('[data-cmd="new-note"]')) App.newNote(); else if (e.target.closest('[data-cmd="library"]')) LN.lib.open(null); });
 
     // drag & drop PDFs/images onto the page area
@@ -395,7 +417,9 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
       if (inField || mod || e.altKey) return;
       if (e.key === 'f' || e.key === 'F') { LN.extras.toggleFullscreen(); return; }
       if (e.key === '?') { LN.extras.shortcuts(); return; }
-      if (e.key === 'Escape' && App.view === 'notes' && !LN.inkSel && !$('#popover:not([hidden])') && menu.hidden) { $('#back-btn').click(); return; }
+      if (e.key === 'Escape' && document.body.classList.contains('is-fullscreen') && !document.fullscreenElement) { LN.extras.toggleFullscreen(); return; }
+      if (e.key === '\\' && App.view === 'notes') { App.setToolbarCollapsed(!document.body.classList.contains('tb-collapsed')); return; }
+      if (e.key === 'Escape' && App.view === 'notes' && !LN.inkSel && !$('#popover:not([hidden])')) { $('#back-btn').click(); return; }
       if (App.view !== 'notes' || !E().note) return;
       if ((e.key === 'Delete' || e.key === 'Backspace') && LN.inkSel) { e.preventDefault(); LN.inkSel.deleteSel(); return; }
       if (e.key === 'Escape' && LN.inkSel) { LN.inkSel.clearSel(); return; }
@@ -409,7 +433,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
       else if (k === 'h') App.setTool('highlighter');
       else if (k === 'e') App.setTool('eraser');
       else if (k === 'l') App.setTool('lasso');
-      else if (k === 'escape') { menu.hidden = true; }
+
     });
 
     window.addEventListener('beforeunload', (e) => { if (LN.audio.rec) { e.preventDefault(); e.returnValue = ''; } });

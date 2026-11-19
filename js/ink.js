@@ -292,6 +292,8 @@
         : { tool: t.name, color: t.color, size: t.size, pts: [p] };
       if ((t.name === 'pen' || t.name === 'pencil') && LN.toolStyles) this.cur.style = LN.toolStyles[t.name];
       const st = LN.audio && LN.audio.stamp(); if (st) this.cur.rec = st;
+      this.lastRaw = p;
+      this.snapshot();
       this.schedule();
     }
     move(e) {
@@ -315,9 +317,13 @@
       e.preventDefault();
       if (this.cur.pts) {
         const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+        // light stabilizer: each new point moves part of the way towards the pen, smoothing jitter
+        const k = this.cur.tool === 'highlighter' ? 0 : this.cur.style === 'calligraphy' ? 0.2 : 0.32;
         for (const ev of (evs.length ? evs : [e])) {
           const p = this.pos(ev), l = this.cur.pts[this.cur.pts.length - 1];
-          if (Math.hypot(p[0] - l[0], p[1] - l[1]) > 0.7) this.cur.pts.push(p);
+          this.lastRaw = p;
+          const q = [l[0] + (p[0] - l[0]) * (1 - k), l[1] + (p[1] - l[1]) * (1 - k), p[2]];
+          if (Math.hypot(q[0] - l[0], q[1] - l[1]) > 0.6) this.cur.pts.push(q);
         }
         if (this.cur.tool === 'highlighter' && e.shiftKey) { // straight highlight
           const a = this.cur.pts[0], b = this.cur.pts[this.cur.pts.length - 1];
@@ -368,7 +374,11 @@
       }
       if (!this.cur) return;
       const s = this.cur; this.cur = null;
+      this.snap = null;
       if (s.pts) {
+        // finish exactly where the pen lifted
+        const L = s.pts[s.pts.length - 1], R0 = this.lastRaw;
+        if (R0 && s.pts.length > 1 && Math.hypot(R0[0] - L[0], R0[1] - L[1]) > 0.6) s.pts.push(R0);
         if (s.pts.length === 1) { const p = s.pts[0]; s.pts.push([p[0] + 0.3, p[1] + 0.3, p[2]]); }
         s.pts = s.pts.map((p) => [r1(p[0]), r1(p[1]), Math.round(p[2] * 100) / 100]);
       } else {
@@ -390,7 +400,7 @@
       if (this.pid === null && !this.pan) return;
       if (this.erasing) this.page.strokes = this.before;
       if (this.drag) { this.page.strokes = this.drag.before; this.sel = this.drag.orig; }
-      this.cur = null; this.lasso = null; this.erasing = false; this.drag = null; this.pid = null; this.pan = null;
+      this.cur = null; this.lasso = null; this.erasing = false; this.drag = null; this.pid = null; this.pan = null; this.snap = null;
       this.render();
     }
     setSel(sel) {
@@ -431,7 +441,24 @@
       this.host.commit(this.page, before);
       this.render();
     }
-    schedule() { if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = 0; this.render(); }); }
+    schedule() { if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = 0; if (this.cur && this.snap) this.renderLive(); else this.render(); }); }
+    // while drawing, keep a picture of the finished strokes and only redraw the stroke in progress
+    snapshot() {
+      if (!this.c.width) return;
+      const s = this.snap && this.snap.width === this.c.width && this.snap.height === this.c.height ? this.snap : document.createElement('canvas');
+      s.width = this.c.width; s.height = this.c.height;
+      const g = s.getContext('2d'); g.clearRect(0, 0, s.width, s.height);
+      LN.renderStrokes(s, this.page.strokes, this.w, this.h, this.res, LN.audio && LN.audio.playback, null);
+      this.snap = s;
+    }
+    renderLive() {
+      const g = this.c.getContext('2d');
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(0, 0, this.c.width, this.c.height);
+      g.drawImage(this.snap, 0, 0);
+      g.setTransform(this.res, 0, 0, this.res, 0, 0);
+      LN.drawStroke(g, this.cur, null);
+    }
     render() {
       LN.renderStrokes(this.c, this.page.strokes, this.w, this.h, this.res, LN.audio && LN.audio.playback, this.cur);
       if (!this.sel && !this.lasso) return;
