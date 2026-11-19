@@ -41,7 +41,8 @@
     };
     mr.start(1000);
     A.rec = rec;
-    rec.timer = setInterval(() => { $('#rec-time').textContent = LN.fmtDur(Date.now() - rec.start); }, 500);
+    rec.timer = setInterval(() => { const t = LN.fmtDur(Date.now() - rec.start); $('#rec-time').textContent = t; $('#rec-label').textContent = t; }, 500);
+    $('#rec-label').textContent = '0:00';
     $('#rec-time').textContent = '0:00';
     $('#rec-live').hidden = false;
     $('#rec-btn').classList.add('recording');
@@ -55,6 +56,7 @@
     A.rec = null;
     $('#rec-live').hidden = true;
     $('#rec-btn').classList.remove('recording');
+    $('#rec-label').textContent = 'Record';
     A.renderList();
   };
 

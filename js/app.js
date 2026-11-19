@@ -173,7 +173,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
   Pr.fit = () => {
     const slide = $(`#present-stage .slide[data-i="${Pr.i}"]`); if (!slide) return;
     const p = Pr.slides[Pr.i];
-    const vw = window.innerWidth - 32, vh = window.innerHeight - 90;
+    const z = LN.uiZoom(), vw = window.innerWidth / z - 32, vh = window.innerHeight / z - 90;
     // fit width, but cap so a page roughly fills the screen; tall pages scroll
     const s = Math.min(vw / p.w, Math.max(vh / p.h, Math.min(vw / p.w, (vh * 1.6) / p.h)));
     const page = slide.firstElementChild;
@@ -254,11 +254,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
   };
   App.closeSidebarMobile = () => document.body.classList.remove('sidebar-open');
 
-  const setTheme = App.setTheme = (t) => {
-    document.documentElement.dataset.theme = t;
-    localStorage.setItem('latanote-theme', t);
-    const tb = $('#theme-toggle'); if (tb) tb.innerHTML = LN.icon(t === 'dark' ? 'sun' : 'moon');
-  };
+  App.setTheme = (t) => LN.appearance.set('skin', t === 'dark' ? 'midnight' : 'classic');
 
   /* ---------- drawing toolbar ---------- */
   App.renderSwatches = () => {
@@ -291,7 +287,6 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
   App.init = async () => {
     LN.hydrateIcons();
     await LN.load();
-    setTheme(document.documentElement.dataset.theme || 'light');
 
     App.purgeTrash();
     LN.lib.init();
@@ -309,7 +304,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     $('#nav-planner').addEventListener('click', () => { App.setView('planner'); App.closeSidebarMobile(); });
     $('#search').addEventListener('input', LN.debounce((e) => { LN.lib.search = e.target.value; App.setView('library'); LN.lib.render(); }, 150));
     $$('[data-action="toggle-sidebar"]').forEach((b) => b.addEventListener('click', () => document.body.classList.toggle('sidebar-open')));
-    $('#theme-toggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+    $('#theme-toggle').addEventListener('click', () => LN.appearance.open());
     $('#file-import').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) App.importFile(f); });
     $('#back-btn').addEventListener('click', () => { const n = E().note; LN.lib.open(n && n.notebookId && LN.lib.get(n.notebookId) ? n.notebookId : null); });
     $('#nb-chip').addEventListener('click', () => { const n = E().note; LN.lib.open(n && n.notebookId ? n.notebookId : null); });
@@ -319,7 +314,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     $('#note-title').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); if (E().mode === 'type') E().focusEnd(); else e.target.blur(); } });
 
     // mode
-    $$('.seg-btn').forEach((b) => b.addEventListener('click', () => E().setMode(b.dataset.mode)));
+    $$('.mode-seg .seg-btn').forEach((b) => b.addEventListener('click', () => E().setMode(b.dataset.mode)));
 
     // toolbar: keep text selection when pressing buttons
     $('#toolbar').addEventListener('mousedown', (e) => { if (e.target.closest('button')) e.preventDefault(); });

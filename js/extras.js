@@ -370,7 +370,7 @@
         <h4>App</h4>
         <button class="set-row" data-set="install">${LN.icon('install')}<span><b>Install LataNote</b><small>Put it on your home screen or desktop. Opens full screen and works offline.</small></span></button>
         <button class="set-row" data-set="fullscreen">${LN.icon('maximize')}<span><b>Full screen</b><small>Shortcut: F</small></span></button>
-        <label class="set-row"><input type="checkbox" data-set="dark" ${dark ? 'checked' : ''}><span><b>Dark mode</b></span></label>
+        <button class="set-row" data-set="appearance">${LN.icon('palette')}<span><b>Themes &amp; text size</b><small>12 themes, including animated ones · larger text for easier reading</small></span></button>
         <label class="set-row"><input type="checkbox" data-set="penonly" ${LN.state.settings.penOnly ? 'checked' : ''}><span><b>Stylus only (palm rejection)</b><small>Fingers scroll; only a pen draws.</small></span></label>
         <button class="set-row" data-set="shortcuts">${LN.icon('keyboard')}<span><b>Keyboard shortcuts</b></span></button>
       </section>
@@ -390,6 +390,7 @@
       else if (k === 'install') { LN.closePanel(); X.install(); }
       else if (k === 'fullscreen') { LN.closePanel(); X.toggleFullscreen(); }
       else if (k === 'shortcuts') X.shortcuts();
+      else if (k === 'appearance') LN.appearance.open();
       else if (k === 'persist') {
         const ok = navigator.storage && navigator.storage.persist ? await navigator.storage.persist().catch(() => false) : false;
         LN.toast(ok ? 'Your notes are protected from automatic clean-up.' : 'The browser didn’t allow it. Installing LataNote usually helps.');

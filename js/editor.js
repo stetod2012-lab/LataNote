@@ -256,7 +256,7 @@
     E.mode = m;
     document.body.classList.toggle('mode-draw', m === 'draw');
     document.body.classList.toggle('mode-type', m === 'type');
-    $$('.seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === m));
+    $$('.mode-seg .seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === m));
     E.pages.forEach((r) => { r.text.contentEditable = m === 'type' ? 'true' : 'false'; });
     if (m === 'draw' && document.activeElement && document.activeElement.classList.contains('page-text')) document.activeElement.blur();
   };
@@ -524,8 +524,20 @@
     return c.toDataURL('image/png');
   };
 
+  /* floating "page x of n" while scrolling */
+  let indT = 0;
+  E.updatePageInd = () => {
+    const el = $('#page-ind'); if (!el || !E.note) return;
+    const n = E.note.pages.length;
+    if (n < 2) { el.hidden = true; return; }
+    el.hidden = false;
+    el.textContent = `Page ${E.visiblePage() + 1} of ${n}`;
+    el.classList.add('show');
+    clearTimeout(indT); indT = setTimeout(() => el.classList.remove('show'), 1400);
+  };
   let wheelAcc = 0;
   document.addEventListener('DOMContentLoaded', () => {
+    $('#pages-area').addEventListener('scroll', () => requestAnimationFrame(E.updatePageInd), { passive: true });
     $('#pages-area').addEventListener('wheel', (e) => {
       if (!e.ctrlKey || !E.note) return;
       e.preventDefault();

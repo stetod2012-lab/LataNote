@@ -94,17 +94,17 @@
   LN.getNote = (id) => LN.state.notes.find((n) => n.id === id);
   LN.getNotebook = (id) => LN.state.notebooks.find((n) => n.id === id);
 
-  const saveIndicator = () => LN.$('#save-state');
+  const saveIndicator = () => ({ set: (txt, dirty) => LN.$$('#save-state, #note-status').forEach((el) => { el.textContent = txt; el.classList.toggle('dirty', dirty); }) });
   const persist = LN.debounce(async () => {
     try {
       await LN.db.set('state', LN.state);
-      const el = saveIndicator(); if (el) { el.textContent = 'Saved'; el.classList.remove('dirty'); }
+      saveIndicator().set('Saved', false);
     } catch (e) {
       console.error(e);
       LN.toast('Could not save. Storage may be full.');
     }
   }, 500);
-  LN.save = () => { const el = saveIndicator(); if (el) { el.textContent = 'Saving…'; el.classList.add('dirty'); } persist(); };
+  LN.save = () => { saveIndicator().set('Saving…', true); persist(); };
   LN.touch = (note) => { if (note) note.updated = Date.now(); LN.save(); LN.emit('notes-changed'); };
 
   LN.load = async () => {
@@ -205,6 +205,7 @@
     insert: 'M12 5v14|M5 12h14|M3 3h18v18H3z',
     sliders: 'M4 6h10|M18 6h2|M4 12h4|M12 12h8|M4 18h12|M20 18h0|M14 4v4|M8 10v4|M16 16v4',
     back: 'M15 6l-6 6 6 6',
+    palette: 'M12 3a9 9 0 1 0 0 18c1.1 0 1.7-.9 1.4-1.8-.3-.9.2-1.9 1.2-1.9H17a4 4 0 0 0 4-4c0-5.2-4-10.3-9-10.3z|M7.5 11.5h.01|M10 7.5h.01|M15 7.5h.01|M17.5 11.5h.01',
     bookmark: 'M6 3h12v18l-6-4-6 4z',
   };
   LN.icon = (name, cls = '') => {
@@ -214,6 +215,17 @@
   };
   LN.hydrateIcons = (root = document) => {
     LN.$$('i[data-icon]', root).forEach((el) => { el.outerHTML = LN.icon(el.dataset.icon); });
+  };
+
+  // detect whether this browser reports element positions zoomed (standard CSS zoom) or not
+  LN.uiZoom = () => {
+    const z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--uiz')) || 1;
+    if (z === 1) return 1;
+    if (LN._zoomScales === undefined) {
+      const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;left:0;top:0;width:100px;height:1px;visibility:hidden';
+      document.body.appendChild(probe); LN._zoomScales = Math.abs(probe.getBoundingClientRect().width - 100) > 1; probe.remove();
+    }
+    return LN._zoomScales ? z : 1;
   };
 
   /* ---------- popover menu (floats above everything, never clipped) ---------- */
@@ -227,11 +239,14 @@
     pop._anchor = anchor; pop._onPick = onPick;
     pop.hidden = false;
     anchor.classList.add('pop-open');
-    const r = anchor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    // page zoom (Larger text mode) scales CSS pixels: convert screen coordinates back
+    const z = LN.uiZoom(), rr = anchor.getBoundingClientRect();
+    const r = { left: rr.left / z, right: rr.right / z, top: rr.top / z, bottom: rr.bottom / z };
+    const W = innerWidth / z, H = innerHeight / z, w = pop.offsetWidth, h = pop.offsetHeight;
     let left = opts.alignRight ? r.right - w : r.left;
-    left = Math.max(8, Math.min(left, innerWidth - w - 8));
+    left = Math.max(8, Math.min(left, W - w - 8));
     let top = r.bottom + 6;
-    if (top + h > innerHeight - 8) top = Math.max(8, r.top - h - 6);
+    if (top + h > H - 8) top = Math.max(8, r.top - h - 6);
     pop.style.left = left + 'px'; pop.style.top = top + 'px';
   };
   LN.closePopover = () => {

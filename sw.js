@@ -1,9 +1,9 @@
 /* LataNote service worker: makes the app load instantly and work offline. */
-const VERSION = 'latanote-v4';
+const VERSION = 'latanote-v5';
 const CORE = [
   './', 'index.html', 'app.html', 'manifest.webmanifest',
-  'css/base.css', 'css/site.css', 'css/app.css',
-  'js/core.js', 'js/paper.js', 'js/ink.js', 'js/editor.js', 'js/library.js', 'js/audio.js', 'js/planner.js', 'js/study.js', 'js/extras.js', 'js/collab.js', 'js/app.js',
+  'css/base.css', 'css/site.css', 'css/app.css', 'css/themes.css',
+  'js/core.js', 'js/appearance.js', 'js/paper.js', 'js/ink.js', 'js/editor.js', 'js/library.js', 'js/audio.js', 'js/planner.js', 'js/study.js', 'js/extras.js', 'js/collab.js', 'js/app.js',
   'assets/logo.svg', 'assets/icon-192.png', 'assets/icon-512.png',
 ];
 

@@ -29,6 +29,7 @@ Everything is free. There are no paid plans.
 | **Installable & offline** | Progressive web app with a manifest and service worker: install to the home screen or desktop, works offline, and opens `.latanote` files. |
 | **Library** | Organize as **Folder › Divider › Notebook › Section › Note**. Folders can nest, and levels can be skipped. The **All notes** page shows every note as a page thumbnail side by side, with your folders and notebooks above. Folder pages group notebooks under their dividers, and notebook pages show sections as tabs. The sidebar holds a collapsible tree. Create items from **+ New** or any item's menu, move things by drag and drop or **Move to…**, and share any folder or notebook as a file. |
 | **Organize & share** | Pinned notes, full-text search (including handwriting), Trash with 30-day restore. Export to HTML, Markdown or PDF (print), and share notes or whole folders as `.latanote` files. Backup and restore, dark mode, responsive layout. |
+| **Appearance & accessibility** | 12 themes: Classic, Midnight, Sepia, Forest, Candy and High contrast, plus animated Ocean waves, Sunset glow, Sakura, Aurora, Starry night and Snowfall. **Larger text** scales the whole interface (Default, Large, Larger, Largest). An easy-to-read font (Atkinson Hyperlegible) and a Reduce motion setting, which follows the system preference by default. |
 
 ## Running it
 
@@ -74,8 +75,9 @@ index.html               landing page
 app.html                 application shell
 manifest.webmanifest     install metadata
 sw.js                    service worker (offline support)
-css/                     base tokens, landing page and app styles
-js/core.js               storage, state, icons, dialogs
+css/                     base tokens, landing page, app styles, themes
+js/core.js               storage, state, icons, dialogs, popover menus
+js/appearance.js         themes, animated backgrounds, text size, readable font
 js/paper.js              paper styles, spacing, colors, custom papers, page templates
 js/ink.js                ink engine and lasso
 js/editor.js             pages, text layer, templates, formatting, imports

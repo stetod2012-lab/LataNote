@@ -16,7 +16,8 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/app.css">
-  <script>document.documentElement.dataset.theme = localStorage.getItem('latanote-theme') || 'light';</script>
+  <link rel="stylesheet" href="css/themes.css">
+  <script>(function(){try{var g=function(k){return localStorage.getItem('latanote-'+k)},d=document.documentElement,sk=g('skin'),dark=['midnight','contrast','aurora','starry','snow'];d.dataset.theme=sk?(dark.indexOf(sk)>-1?'dark':'light'):(g('theme')||'light');if(sk)d.dataset.skin=sk;var z={lg:1.15,xl:1.3,xxl:1.5}[g('textsize')];if(z)d.style.setProperty('--uiz',z);}catch(e){}})();</script>
 </head>
 <body class="app mode-type">
 <div class="shell" id="shell">
@@ -44,7 +45,7 @@
     </nav>
     <div class="sb-foot">
       <button class="icon-btn" id="settings-btn" title="Settings, sync &amp; backup" aria-label="Settings"><i data-icon="settings"></i></button>
-      <button class="icon-btn" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode"><i data-icon="moon"></i></button>
+      <button class="icon-btn" id="theme-toggle" title="Themes &amp; text size" aria-label="Themes and text size"><i data-icon="palette"></i></button>
       <div class="menu-wrap up">
         <button class="icon-btn" id="timer-btn" title="Focus timer" aria-label="Focus timer"><i data-icon="clock"></i><span id="timer-label"></span></button>
         <div class="menu timer-pop" id="timer-pop" hidden>
@@ -83,21 +84,21 @@
 
     <!-- NOTE VIEW -->
     <section class="view" id="view-notes" hidden>
-      <header class="topbar">
+      <header class="topbar note-top">
         <button class="icon-btn menu-btn" data-action="toggle-sidebar" aria-label="Open sidebar"><i data-icon="menu"></i></button>
-        <button class="icon-btn back-btn" id="back-btn" title="Back to library" aria-label="Back to library"><i data-icon="back"></i></button>
+        <button class="back-btn" id="back-btn" title="Back to library (Esc)" aria-label="Back to library"><i data-icon="back"></i><span>Library</span></button>
         <div class="title-wrap">
-          <button class="nb-chip" id="nb-chip" title="Open this location in the library"></button>
           <input class="note-title" id="note-title" placeholder="Untitled note" aria-label="Note title">
-        </div>
-        <div class="seg" role="tablist" aria-label="Input mode">
-          <button class="seg-btn active" data-mode="type" title="Type (T)"><i data-icon="type"></i><span>Type</span></button>
-          <button class="seg-btn" data-mode="draw" title="Draw (D)"><i data-icon="pen"></i><span>Draw</span></button>
+          <div class="note-sub">
+            <button class="nb-chip" id="nb-chip" title="Show this location in the library"></button>
+            <span class="note-status" id="note-status" aria-live="polite">Saved</span>
+          </div>
         </div>
         <div class="top-actions">
           <span class="live-chip" id="live-chip" hidden title="Live collaboration"><span class="live-dot"></span><span id="live-count">Live</span></span>
-          <button class="icon-btn rec-btn" id="rec-btn" title="Record audio" aria-label="Record audio"><i data-icon="mic"></i></button>
-          <button class="icon-btn" id="study-btn" title="Study assistant" aria-label="Study assistant"><i data-icon="sparkles"></i></button>
+          <button class="act-btn rec-btn" id="rec-btn" title="Record audio while you write" aria-label="Record audio"><i data-icon="mic"></i><span id="rec-label">Record</span></button>
+          <button class="act-btn" id="study-btn" title="Study assistant: summaries, flashcards, quizzes, tutor" aria-label="Study assistant"><i data-icon="sparkles"></i><span>Study</span></button>
+          <span class="act-sep"></span>
           <button class="icon-btn" id="fs-btn" title="Full screen (F)" aria-label="Full screen"><i data-icon="maximize"></i></button>
           <div class="menu-wrap">
             <button class="icon-btn" id="more-btn" aria-haspopup="menu" aria-label="More"><i data-icon="more"></i></button>
@@ -121,6 +122,11 @@
 
       <!-- Context toolbar -->
       <div class="toolbar" id="toolbar">
+        <div class="tb-pill tb-main">
+        <div class="mode-seg" role="tablist" aria-label="Input mode">
+          <button class="seg-btn active" data-mode="type" title="Type (T)" role="tab"><i data-icon="type"></i><span>Type</span></button>
+          <button class="seg-btn" data-mode="draw" title="Draw (D)" role="tab"><i data-icon="pen"></i><span>Draw</span></button>
+        </div>
         <div class="tb-group tb-type">
           <select id="block-select" title="Text style" aria-label="Text style">
             <option value="p">Text</option>
@@ -168,7 +174,8 @@
           <button class="tb-btn" id="redo-btn" title="Redo (Ctrl+Shift+Z)"><i data-icon="redo"></i></button>
         </div>
 
-        <div class="tb-group tb-right">
+        </div>
+        <div class="tb-pill tb-right">
           <button class="tb-btn paper-btn" data-cmd="paper" title="Page background, line spacing and paper color"><i data-icon="layout"></i><span id="paper-label">Lined</span></button>
           <button class="tb-btn" data-cmd="add-page" title="Add a page"><i data-icon="pageplus"></i></button>
           <button class="tb-btn zoom-label drop" data-drop="zoom" id="zoom-label" title="Zoom">100%</button>
@@ -177,6 +184,7 @@
 
       <div class="pages-area" id="pages-area">
         <div class="templates" id="templates" hidden></div>
+        <div class="page-ind" id="page-ind" hidden></div>
         <div class="pages" id="pages"></div>
         <div class="empty" id="empty" hidden>
           <img src="assets/logo.svg" alt="" width="56" height="56">
@@ -298,6 +306,7 @@
 <input type="file" id="file-import" accept=".latanote,.json,application/json" hidden>
 
 <script src="js/core.js"></script>
+<script src="js/appearance.js"></script>
 <script src="js/paper.js"></script>
 <script src="js/ink.js"></script>
 <script src="js/editor.js"></script>
