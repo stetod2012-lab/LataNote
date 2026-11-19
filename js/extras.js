@@ -333,7 +333,7 @@
     <h3>${LN.icon('keyboard')} Keyboard shortcuts</h3>
     <table class="kbd-table">
       <tr><td><kbd>T</kbd> / <kbd>D</kbd></td><td>Type mode / Draw mode</td></tr>
-      <tr><td><kbd>P</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>L</kbd></td><td>Pen, highlighter, eraser, lasso</td></tr>
+      <tr><td><kbd>P</kbd> <kbd>N</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>L</kbd></td><td>Pen, pencil, highlighter, eraser, lasso (press P or N again for styles)</td></tr>
       <tr><td><kbd>Del</kbd></td><td>Delete lasso selection</td></tr>
       <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></td><td>Undo / redo ink</td></tr>
       <tr><td><kbd>Ctrl</kbd>+<kbd>B</kbd> <kbd>I</kbd> <kbd>U</kbd></td><td>Bold, italic, underline</td></tr>

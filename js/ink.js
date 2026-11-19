@@ -4,6 +4,7 @@
   const LN = window.LN;
   const SHAPES = ['line', 'arrow', 'rect', 'ellipse'];
   LN.tool = { name: 'pen', color: '#1f2937', size: 3 };
+  LN.toolStyles = { pen: 'fountain', pencil: '2b' };
 
   const r1 = (n) => Math.round(n * 10) / 10;
 
@@ -29,7 +30,8 @@
 
   function hit(s, p, r) {
     const pts = s.pts || shapePolyline(s);
-    const tol = r + (s.tool === 'highlighter' ? s.size * 2 : s.size / 2);
+    const wide = s.tool === 'highlighter' || ['brush', 'marker', 'calligraphy', '6b'].includes(s.style);
+    const tol = r + (wide ? s.size * 2 : s.size / 2);
     if (pts.length === 1) return Math.hypot(p[0] - pts[0][0], p[1] - pts[0][1]) <= tol;
     for (let i = 1; i < pts.length; i++) if (distToSeg(p, pts[i - 1], pts[i]) <= tol) return true;
     return false;
@@ -59,7 +61,119 @@
   const clone = (s) => JSON.parse(JSON.stringify(s));
   LN.inkSel = null; // the Ink instance that currently holds a lasso selection
 
-  function penWidth(s, pr) { return s.tool === 'pen' ? Math.max(0.6, s.size * (0.35 + pr * 1.3)) : s.size; }
+  /* ---------- pen & pencil styles ---------- */
+  LN.PEN_STYLES = [
+    { id: 'fountain', name: 'Fountain pen', hint: 'Responds to pressure and speed' },
+    { id: 'ballpoint', name: 'Ballpoint', hint: 'Even, steady line' },
+    { id: 'brush', name: 'Brush pen', hint: 'Tapered, expressive strokes' },
+    { id: 'calligraphy', name: 'Calligraphy', hint: 'Angled nib: thick and thin' },
+    { id: 'marker', name: 'Felt marker', hint: 'Bold, smooth and flat' },
+  ];
+  LN.PENCIL_STYLES = [
+    { id: 'hb', name: 'Sharp (HB)', hint: 'Light, fine graphite' },
+    { id: '2b', name: 'Soft (2B)', hint: 'Darker everyday pencil' },
+    { id: '6b', name: 'Sketch (6B)', hint: 'Broad, dark shading' },
+  ];
+  const PENCIL = { hb: { w: 0.85, a: 0.66, layers: 1 }, '2b': { w: 1.1, a: 0.8, layers: 2 }, '6b': { w: 1.75, a: 0.92, layers: 3 } };
+
+  // grainy graphite texture, cached per colour
+  const grain = new Map();
+  function pencilPattern(g, color) {
+    let pat = grain.get(color);
+    if (!pat) {
+      const c = document.createElement('canvas'); c.width = c.height = 64;
+      const x = c.getContext('2d');
+      x.fillStyle = color; x.fillRect(0, 0, 1, 1);
+      const [r, gg, b] = x.getImageData(0, 0, 1, 1).data;
+      const img = x.createImageData(64, 64);
+      let seed = 1234567;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      for (let i = 0; i < img.data.length; i += 4) {
+        const v = rnd();
+        img.data[i] = r; img.data[i + 1] = gg; img.data[i + 2] = b;
+        img.data[i + 3] = v < 0.42 ? 0 : Math.round(255 * (0.35 + (v - 0.42) * 1.12));
+      }
+      x.putImageData(img, 0, 0);
+      pat = g.createPattern(c, 'repeat');
+      if (pat.setTransform && window.DOMMatrix) pat.setTransform(new DOMMatrix([0.5, 0, 0, 0.5, 0, 0]));
+      grain.set(color, pat);
+    }
+    return pat;
+  }
+
+  function smoothPath(g, P) {
+    g.beginPath(); g.moveTo(P[0][0], P[0][1]);
+    if (P.length < 3) { g.lineTo(P[P.length - 1][0], P[P.length - 1][1]); return; }
+    for (let i = 1; i < P.length - 1; i++) g.quadraticCurveTo(P[i][0], P[i][1], (P[i][0] + P[i + 1][0]) / 2, (P[i][1] + P[i + 1][1]) / 2);
+    const L = P[P.length - 1]; g.lineTo(L[0], L[1]);
+  }
+  // draws the stroke as short curved segments, each with its own width
+  function segmented(g, P, widthAt) {
+    if (P.length < 3) {
+      g.lineWidth = widthAt(0);
+      g.beginPath(); g.moveTo(P[0][0], P[0][1]); g.lineTo(P[P.length - 1][0], P[P.length - 1][1]); g.stroke();
+      return;
+    }
+    let sx = P[0][0], sy = P[0][1];
+    for (let i = 1; i < P.length - 1; i++) {
+      const mx = (P[i][0] + P[i + 1][0]) / 2, my = (P[i][1] + P[i + 1][1]) / 2;
+      g.lineWidth = widthAt(i);
+      g.beginPath(); g.moveTo(sx, sy); g.quadraticCurveTo(P[i][0], P[i][1], mx, my); g.stroke();
+      sx = mx; sy = my;
+    }
+    const L = P[P.length - 1];
+    g.lineWidth = widthAt(P.length - 1);
+    g.beginPath(); g.moveTo(sx, sy); g.lineTo(L[0], L[1]); g.stroke();
+  }
+  const segLen = (P, i) => { const a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)]; return Math.hypot(b[0] - a[0], b[1] - a[1]) / 2; };
+
+  function drawPen(g, s, P) {
+    const st = s.style || 'fountain', n = P.length;
+    if (st === 'ballpoint') {
+      g.globalAlpha *= 0.95;
+      segmented(g, P, (i) => Math.max(0.6, s.size * (0.78 + P[i][2] * 0.3)));
+    } else if (st === 'marker') {
+      g.globalAlpha *= 0.9;
+      g.lineWidth = s.size * 2.3;
+      smoothPath(g, P); g.stroke();
+    } else if (st === 'brush') {
+      segmented(g, P, (i) => {
+        const t = n > 1 ? i / (n - 1) : 0.5;
+        const taper = Math.min(1, t * 7 + 0.15, (1 - t) * 5 + 0.15);
+        return Math.max(0.5, s.size * (0.3 + P[i][2] * 2.3) * taper);
+      });
+    } else if (st === 'calligraphy') {
+      const hw = s.size * 1.7, nx = Math.cos(-Math.PI / 4), ny = Math.sin(-Math.PI / 4);
+      g.lineWidth = Math.max(0.8, s.size * 0.35);
+      for (let i = 1; i < n; i++) {
+        const a = P[i - 1], b = P[i], w = hw * (0.55 + b[2] * 0.9);
+        g.beginPath();
+        g.moveTo(a[0] + nx * w, a[1] + ny * w); g.lineTo(b[0] + nx * w, b[1] + ny * w);
+        g.lineTo(b[0] - nx * w, b[1] - ny * w); g.lineTo(a[0] - nx * w, a[1] - ny * w);
+        g.closePath(); g.fill(); g.stroke();
+      }
+      if (n === 1) { g.beginPath(); g.moveTo(P[0][0] + nx * hw, P[0][1] + ny * hw); g.lineTo(P[0][0] - nx * hw, P[0][1] - ny * hw); g.stroke(); }
+    } else { // fountain: pressure + speed (faster = thinner)
+      segmented(g, P, (i) => {
+        const speed = Math.max(0.62, Math.min(1.15, 1.2 - segLen(P, i) / 28));
+        return Math.max(0.6, s.size * (0.35 + P[i][2] * 1.3) * speed);
+      });
+    }
+  }
+
+  function drawPencil(g, s, P) {
+    const k = PENCIL[s.style] || PENCIL['2b'];
+    const avg = P.reduce((a, p) => a + p[2], 0) / P.length;
+    g.strokeStyle = pencilPattern(g, s.color);
+    g.globalAlpha *= Math.min(1, k.a * (0.65 + avg * 0.7));
+    g.lineWidth = Math.max(0.8, s.size * k.w * (0.75 + avg * 0.5));
+    smoothPath(g, P);
+    for (let i = 0; i < k.layers; i++) g.stroke(); // softer leads lay down more graphite
+    // a fainter, slightly wider pass gives the soft graphite edge
+    g.globalAlpha *= 0.35;
+    g.lineWidth *= 1.6;
+    smoothPath(g, P); g.stroke();
+  }
 
   LN.drawStroke = function (g, s, playback) {
     let alpha = 1;
@@ -77,22 +191,8 @@
       g.stroke();
     } else if (P) {
       g.globalAlpha = alpha;
-      if (P.length < 3) {
-        g.lineWidth = penWidth(s, P[0][2]);
-        g.beginPath(); g.moveTo(P[0][0], P[0][1]); g.lineTo(P[P.length - 1][0], P[P.length - 1][1]); g.stroke();
-      } else {
-        // quadratic smoothing through midpoints, width varies per segment with pressure
-        let sx = P[0][0], sy = P[0][1];
-        for (let i = 1; i < P.length - 1; i++) {
-          const mx = (P[i][0] + P[i + 1][0]) / 2, my = (P[i][1] + P[i + 1][1]) / 2;
-          g.lineWidth = penWidth(s, P[i][2]);
-          g.beginPath(); g.moveTo(sx, sy); g.quadraticCurveTo(P[i][0], P[i][1], mx, my); g.stroke();
-          sx = mx; sy = my;
-        }
-        const L = P[P.length - 1];
-        g.lineWidth = penWidth(s, L[2]);
-        g.beginPath(); g.moveTo(sx, sy); g.lineTo(L[0], L[1]); g.stroke();
-      }
+      if (s.tool === 'pencil') drawPencil(g, s, P);
+      else drawPen(g, s, P);
     } else {
       g.globalAlpha = alpha;
       g.lineWidth = s.size;
@@ -190,6 +290,7 @@
       this.cur = SHAPES.includes(t.name)
         ? { tool: t.name, color: t.color, size: t.size, a: p.slice(0, 2), b: p.slice(0, 2) }
         : { tool: t.name, color: t.color, size: t.size, pts: [p] };
+      if ((t.name === 'pen' || t.name === 'pencil') && LN.toolStyles) this.cur.style = LN.toolStyles[t.name];
       const st = LN.audio && LN.audio.stamp(); if (st) this.cur.rec = st;
       this.schedule();
     }

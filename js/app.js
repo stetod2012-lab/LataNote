@@ -8,8 +8,8 @@
   const TRASH_DAYS = 30;
   const INK_COLORS = ['#1f2937', '#2563eb', '#e11d48', '#059669', '#7c3aed', '#ea580c'];
   const HL_COLORS = ['#fde047', '#86efac', '#93c5fd', '#f9a8d4', '#fdba74', '#c4b5fd'];
-  const toolColors = { pen: '#1f2937', highlighter: '#fde047', shape: '#2563eb' };
-  const colorKey = (t) => (t === 'pen' ? 'pen' : t === 'highlighter' ? 'highlighter' : 'shape');
+  const toolColors = { pen: '#1f2937', pencil: '#374151', highlighter: '#fde047', shape: '#2563eb' };
+  const colorKey = (t) => (t === 'pen' || t === 'pencil' || t === 'highlighter' ? t : 'shape');
 
   /* ---------- library ---------- */
   App.renderLibrary = () => LN.lib.render();
@@ -335,6 +335,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     $('#file-pdf').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) E().importFile(f); });
     App.renderSwatches();
     document.body.dataset.tool = LN.tool.name;
+    if (LN.state.settings.toolStyles) Object.assign(LN.toolStyles, LN.state.settings.toolStyles);
 
     // more menu
     const menu = $('#more-menu');
@@ -401,7 +402,10 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
       const k = e.key.toLowerCase();
       if (k === 't') E().setMode('type');
       else if (k === 'd') E().setMode('draw');
-      else if (k === 'p') App.setTool('pen');
+      else if (k === 'p' || k === 'n') {
+        const t = k === 'p' ? 'pen' : 'pencil';
+        if (LN.tool.name === t && E().mode === 'draw') App.openStyleMenu($(`.tool[data-tool="${t}"]`)); else App.setTool(t);
+      }
       else if (k === 'h') App.setTool('highlighter');
       else if (k === 'e') App.setTool('eraser');
       else if (k === 'l') App.setTool('lasso');
@@ -423,11 +427,50 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     if ('launchQueue' in window) window.launchQueue.setConsumer(async (params) => { for (const h of params.files || []) App.importFile(await h.getFile()); });
   };
 
+  /* ---------- pen & pencil styles ---------- */
+  const previewCache = {};
+  const stylePreview = (tool, style, color) => {
+    const key = tool + style + color;
+    if (previewCache[key]) return previewCache[key];
+    const c = document.createElement('canvas'), W = 120, H = 34, dpr = 2;
+    c.width = W * dpr; c.height = H * dpr;
+    const g = c.getContext('2d'); g.scale(dpr, dpr);
+    const pts = [];
+    for (let i = 0; i <= 40; i++) { const t = i / 40; pts.push([8 + t * 104, 17 + Math.sin(t * Math.PI * 2.2) * 9, 0.3 + Math.sin(t * Math.PI) * 0.6]); }
+    LN.drawStroke(g, { tool, style, color, size: tool === 'pencil' ? 3.2 : 2.6, pts }, null);
+    return (previewCache[key] = c.toDataURL());
+  };
+  App.openStyleMenu = (btn) => {
+    if (!btn) return;
+    const tool = btn.dataset.tool;
+    const list = tool === 'pen' ? LN.PEN_STYLES : LN.PENCIL_STYLES;
+    const color = LN.tool.color && LN.tool.name === tool ? LN.tool.color : toolColors[tool];
+    LN.popover(btn, `<p class="menu-title">${tool === 'pen' ? 'Pen style' : 'Pencil'}</p>` + list.map((s) => `
+      <button class="style-opt ${LN.toolStyles[tool] === s.id ? 'on' : ''}" data-pen-style="${s.id}" data-style-tool="${tool}">
+        <img src="${stylePreview(tool, s.id, color)}" alt="" width="120" height="34"><span><b>${s.name}</b><small>${s.hint}</small></span></button>`).join(''),
+      (b) => App.toolbarAction(b), { cls: 'style-menu' });
+  };
+  App.setStyle = (tool, style) => {
+    LN.toolStyles[tool] = style;
+    LN.state.settings.toolStyles = Object.assign({}, LN.toolStyles);
+    LN.save();
+    App.setTool(tool);
+    const list = tool === 'pen' ? LN.PEN_STYLES : LN.PENCIL_STYLES;
+    const s = list.find((x) => x.id === style);
+    const b = $(`.tool[data-tool="${tool}"]`);
+    if (b && s) b.title = `${s.name} (${tool === 'pen' ? 'P' : 'N'}): click again to change`;
+  };
+
   /* ---------- toolbar actions & dropdowns ---------- */
   App.toolbarAction = (b) => {
     if (b.dataset.exec) E().exec(b.dataset.exec, b.dataset.arg || null);
     else if (b.dataset.cmd) App.noteCmd(b.dataset.cmd);
-    else if (b.dataset.tool) App.setTool(b.dataset.tool);
+    else if (b.dataset.tool) {
+      const t = b.dataset.tool;
+      if ((t === 'pen' || t === 'pencil') && LN.tool.name === t && E().mode === 'draw' && !b.closest('.popover')) App.openStyleMenu(b);
+      else App.setTool(t);
+    }
+    else if (b.dataset.penStyle) App.setStyle(b.dataset.styleTool, b.dataset.penStyle);
     else if (b.dataset.color) App.setColor(b.dataset.color);
     else if (b.dataset.size) { LN.tool.size = +b.dataset.size; $$('#sizes .size').forEach((x) => x.classList.toggle('active', x === b)); }
     else if (b.dataset.zoom != null) E().setZoom(+b.dataset.zoom);

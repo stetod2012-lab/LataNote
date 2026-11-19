@@ -13,7 +13,7 @@ Everything is free. There are no paid plans.
 
 | Area | What you can do |
 | --- | --- |
-| **Handwriting & drawing** | Pressure-sensitive pen, highlighter, stroke eraser, lines, arrows, rectangles, ellipses (<kbd>Shift</kbd> snaps). Stylus-only palm rejection. Undo/redo. |
+| **Handwriting & drawing** | **Pen** in five styles: Fountain (pressure and speed), Ballpoint, Brush (tapered), Calligraphy (angled nib) and Felt marker. **Pencil** with real graphite grain: Sharp HB, Soft 2B and Sketch 6B. Click the active pen or pencil (or press P/N again) to switch style. Also highlighter, stroke eraser, lasso, and shapes (line, arrow, rectangle, ellipse; <kbd>Shift</kbd> snaps). Stylus-only palm rejection. Undo/redo. |
 | **Lasso** | Circle ink to move, recolor, duplicate, delete or convert it to text. |
 | **Handwriting to text** | On-device recognition (the browser's handwriting recognizer where available, otherwise bundled Tesseract OCR). Recognized handwriting becomes searchable and feeds the study tools. |
 | **Typing & documents** | Rich text on the same page as ink: headings, formatting, colors, lists, checklists, tables, links, images, quotes and code. Includes speech-to-text dictation and read aloud. |

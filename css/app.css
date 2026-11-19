@@ -793,3 +793,15 @@ html[data-fx] .note-top { background: color-mix(in srgb, var(--surface) 55%, tra
   .round-btn { width: 36px; height: 36px; }
   #view-notes .menu-btn { display: none; }
 }
+
+/* pen & pencil styles */
+.tb-btn.styled::after { content: ""; position: absolute; right: 4px; bottom: 4px; width: 0; height: 0; border-left: 4px solid transparent; border-top: 4px solid currentColor; opacity: .45; transform: rotate(-90deg); }
+.tb-btn.styled.active::after { opacity: .8; }
+.popover.style-menu { min-width: 300px; }
+.menu-title { margin: 4px 10px 6px; font-size: .72rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--text-3); }
+.style-opt { align-items: center !important; gap: 12px !important; padding: 6px 10px !important; }
+.style-opt img { width: 120px; height: 34px; border-radius: 8px; background: #fff; box-shadow: 0 0 0 1px var(--border); flex: none; }
+.style-opt span { display: grid; }
+.style-opt small { color: var(--text-3); font-size: .76rem; font-weight: 400; }
+.style-opt.on { background: var(--brand-50); }
+.style-opt.on b { color: var(--brand); }
