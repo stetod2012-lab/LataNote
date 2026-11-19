@@ -17,17 +17,25 @@
       E.redo = [];
       E.updateUndoButtons();
       LN.touch(E.note);
+      if (!$('#templates').hidden) E.renderTemplates();
     },
   };
 
   /* ---------- open / render ---------- */
   E.open = (id) => {
     const note = id ? LN.getNote(id) : null;
+    if (LN.inkSel) LN.inkSel.clearSel();
     E.note = note; E.undo = []; E.redo = []; E.range = null;
     LN.state.ui.noteId = note ? note.id : null; LN.save();
     document.body.classList.toggle('no-note', !note);
     $('#empty').hidden = !!note;
     if (LN.audio) LN.audio.stopPlayback();
+    if (!note) {
+      const any = LN.state.notes.length > 0;
+      $('#empty-title').textContent = any ? 'No note open' : 'Your notebook is empty';
+      $('#empty-msg').textContent = any ? 'Pick a note from the list, or create a new one.' : 'Create your first note to start writing, drawing, recording and studying.';
+      $('#templates').hidden = true;
+    }
     if (!note) { $('#pages').innerHTML = ''; E.pages = []; LN.emit('note-opened', null); return; }
     $('#note-title').value = note.title;
     E.renderChip();
@@ -55,6 +63,78 @@
     });
     E.computeFit();
     E.pages.forEach(E.layout);
+    E.renderTemplates();
+  };
+
+  /* ---------- templates ---------- */
+  const today = () => new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  E.TEMPLATES = [
+    { id: 'blank', name: 'Blank page', icon: 'note', paper: 'lined', html: () => '' },
+    { id: 'lecture', name: 'Lecture (Cornell)', icon: 'book', paper: 'cornell', title: 'Lecture notes',
+      html: () => `<h1>Lecture:&nbsp;</h1><p><b>Date:</b> ${today()}</p><p><b>Topic:</b> </p><h2>Notes</h2><p><br></p><p><br></p><h2>Key terms</h2><p>Term: definition</p><h2>Summary</h2><p><br></p>` },
+    { id: 'meeting', name: 'Meeting', icon: 'calendar', paper: 'blank', title: 'Meeting notes',
+      html: () => `<h1>Meeting notes</h1><p><b>Date:</b> ${today()}</p><p><b>Attendees:</b> </p><h2>Agenda</h2><ol><li><br></li></ol><h2>Notes</h2><p><br></p><h2>Action items</h2><ul class="checklist"><li><br></li></ul>` },
+    { id: 'todo', name: 'To-do list', icon: 'checksquare', paper: 'lined', title: 'To-do',
+      html: () => `<h1>To-do</h1><ul class="checklist"><li><br></li></ul><h2>Later</h2><ul class="checklist"><li><br></li></ul>` },
+    { id: 'journal', name: 'Daily journal', icon: 'edit', paper: 'dot', title: 'Journal',
+      html: () => `<h1>${today()}</h1><h2>Today I’m grateful for</h2><p><br></p><h2>Highlights</h2><p><br></p><h2>What I learned</h2><p><br></p><h2>Tomorrow</h2><ul class="checklist"><li><br></li></ul>` },
+    { id: 'study', name: 'Study guide', icon: 'sparkles', paper: 'lined', title: 'Study guide',
+      html: () => `<h1>Study guide:&nbsp;</h1><h2>Key terms</h2><p>Term: definition</p><p>Term: definition</p><h2>Main ideas</h2><ul><li><br></li></ul><h2>Questions to review</h2><ol><li><br></li></ol><h2>Summary</h2><p><br></p>` },
+    { id: 'sketch', name: 'Sketch / diagram', icon: 'pen', paper: 'grid', title: 'Sketch', draw: true, html: () => '' },
+  ];
+  E.isBlank = (note) => note && note.pages.length === 1 && pageIsEmpty(note.pages[0]);
+  E.renderTemplates = () => {
+    const el = $('#templates'); if (!el) return;
+    const show = E.isBlank(E.note);
+    el.hidden = !show;
+    if (!show) return;
+    el.innerHTML = `<span class="tpl-label">Start with a template</span>` + E.TEMPLATES.map((t) =>
+      `<button class="tpl" data-tpl="${t.id}">${LN.icon(t.icon)}<span>${t.name}</span></button>`).join('');
+  };
+  E.applyTemplate = (id) => {
+    const t = E.TEMPLATES.find((x) => x.id === id); if (!t || !E.note) return;
+    E.note.pages[0].html = t.html();
+    E.note.paper = t.paper;
+    if (!E.note.title && t.title) { E.note.title = t.title; $('#note-title').value = t.title; }
+    $('#paper-select').value = t.paper;
+    LN.touch(E.note);
+    E.renderPages();
+    $('#templates').hidden = true;
+    if (t.draw) E.setMode('draw');
+    else if (t.id !== 'blank') {
+      E.setMode('type');
+      const h1 = E.pages[0].text.querySelector('h1');
+      if (h1) { E.pages[0].text.focus(); const r = document.createRange(); r.selectNodeContents(h1); r.collapse(false); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+    } else E.focusEnd();
+  };
+
+  /* ---------- live collaboration: merge a remote copy of the open note ---------- */
+  E.applyRemote = (remote) => {
+    const note = E.note;
+    if (!note || note.id !== remote.id) return false;
+    const sameShape = remote.pages.length === note.pages.length && remote.pages.every((p, i) => p.id === note.pages[i].id);
+    if (note.title !== remote.title) { note.title = remote.title; if (document.activeElement !== $('#note-title')) $('#note-title').value = remote.title; }
+    if (note.paper !== remote.paper) { note.paper = remote.paper; $('#paper-select').value = remote.paper; if (sameShape) E.pages.forEach((r) => { if (!r.pg.bg) r.page.className = 'page paper-' + remote.paper; }); }
+    note.cards = remote.cards || note.cards;
+    if (!sameShape) {
+      note.pages = remote.pages.map((p) => Object.assign(LN.newPage(), p));
+      E.undo = []; E.redo = [];
+      const y = $('#pages-area').scrollTop; E.renderPages(); $('#pages-area').scrollTop = y;
+      return true;
+    }
+    remote.pages.forEach((rp, i) => {
+      const rec = E.pages[i], pg = note.pages[i];
+      if (rp.html !== pg.html) {
+        pg.html = rp.html;
+        if (document.activeElement !== rec.text) rec.text.innerHTML = rp.html;
+      }
+      if (JSON.stringify(rp.strokes) !== JSON.stringify(pg.strokes)) {
+        if (LN.inkSel === rec.ink) rec.ink.clearSel();
+        pg.strokes = rp.strokes; rec.ink.render();
+      }
+      pg.ocr = rp.ocr;
+    });
+    return true;
   };
 
   E.pageEl = (pg, i, total) => {
@@ -80,7 +160,7 @@
     text.innerHTML = pg.html;
     if (pg.bg) text.style.minHeight = pg.bgH + 'px';
     if (i === 0) text.dataset.placeholder = 'Start typing here, or switch to Draw and write by hand…';
-    text.addEventListener('input', () => { pg.html = text.innerHTML; LN.touch(E.note); });
+    text.addEventListener('input', () => { pg.html = text.innerHTML; LN.touch(E.note); if (!$('#templates').hidden) E.renderTemplates(); });
     text.addEventListener('click', (e) => {
       const li = e.target.closest('ul.checklist > li');
       if (li && e.clientX < li.getBoundingClientRect().left) { li.classList.toggle('done'); pg.html = text.innerHTML; LN.touch(E.note); return; }
@@ -145,12 +225,14 @@
   };
   E.doUndo = () => {
     const u = E.undo.pop(); if (!u) return;
+    if (LN.inkSel) LN.inkSel.clearSel();
     E.redo.push({ pg: u.pg, strokes: u.pg.strokes });
     u.pg.strokes = u.strokes;
     E.redrawInk(); E.updateUndoButtons(); LN.touch(E.note);
   };
   E.doRedo = () => {
     const r = E.redo.pop(); if (!r) return;
+    if (LN.inkSel) LN.inkSel.clearSel();
     E.undo.push({ pg: r.pg, strokes: r.pg.strokes });
     r.pg.strokes = r.strokes;
     E.redrawInk(); E.updateUndoButtons(); LN.touch(E.note);
@@ -386,6 +468,16 @@
     LN.renderStrokes(c, rec.pg.strokes, w, h, res, null, null);
     return c.toDataURL('image/png');
   };
+
+  let wheelAcc = 0;
+  document.addEventListener('DOMContentLoaded', () => {
+    $('#pages-area').addEventListener('wheel', (e) => {
+      if (!e.ctrlKey || !E.note) return;
+      e.preventDefault();
+      wheelAcc += e.deltaY;
+      if (Math.abs(wheelAcc) > 40) { E.setZoom(wheelAcc < 0 ? 1 : -1); wheelAcc = 0; }
+    }, { passive: false });
+  });
 
   window.addEventListener('resize', LN.debounce(() => { if (E.fit && E.note) { E.computeFit(); E.pages.forEach(E.layout); } }, 120));
 })();

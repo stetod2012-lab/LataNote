@@ -4,6 +4,8 @@
   const LN = window.LN, $ = LN.$, $$ = LN.$$, E = () => LN.editor;
 
   const App = (LN.app = { view: 'notes', search: '' });
+  const TRASH = '__trash';
+  const TRASH_DAYS = 30;
   const INK_COLORS = ['#1f2937', '#2563eb', '#e11d48', '#059669', '#7c3aed', '#ea580c'];
   const HL_COLORS = ['#fde047', '#86efac', '#93c5fd', '#f9a8d4', '#fdba74', '#c4b5fd'];
   const toolColors = { pen: '#1f2937', highlighter: '#fde047', shape: '#2563eb' };
@@ -19,16 +21,28 @@
         <li><button class="nb ${sel === nb.id ? 'active' : ''}" data-nb="${nb.id}">
           <span class="nb-dot" style="background:${nb.color}"></span><span class="nb-name">${LN.esc(nb.name)}</span><span class="nb-count">${count(nb.id)}</span>
           <span class="nb-edit" data-nb-edit="${nb.id}" role="button" tabindex="0" title="Edit notebook" aria-label="Edit ${LN.esc(nb.name)}">${LN.icon('edit')}</span>
-        </button></li>`).join('');
+        </button></li>`).join('') +
+      `<li><button class="nb trash-nb ${sel === TRASH ? 'active' : ''}" data-nb="${TRASH}">${LN.icon('trash')}<span class="nb-name">Trash</span><span class="nb-count">${(LN.state.trash || []).length || ''}</span></button></li>`;
+  };
+
+  App.renderTrash = () => {
+    const items = (LN.state.trash || []).slice().sort((a, b) => b.deletedAt - a.deletedAt);
+    $('#notes-heading').textContent = 'Trash';
+    $('#note-list').innerHTML = (items.length ? `<li class="ni-empty">Notes are deleted forever ${TRASH_DAYS} days after you trash them. <button class="link-btn" data-trash="empty">Empty trash</button></li>` : '') +
+      items.map((n) => `<li class="trash-item"><div><b>${LN.esc(n.title || 'Untitled note')}</b><small>Deleted ${LN.relTime(n.deletedAt)}</small></div>
+        <button class="icon-btn sm" data-trash="restore" data-id="${n.id}" title="Restore">${LN.icon('restore')}</button>
+        <button class="icon-btn sm" data-trash="purge" data-id="${n.id}" title="Delete forever">${LN.icon('x')}</button></li>`).join('') ||
+      '<li class="ni-empty">Trash is empty.</li>';
   };
 
   App.renderNotes = () => {
     const q = App.search.trim().toLowerCase();
     const nbId = LN.state.ui.notebookId;
+    if (nbId === TRASH && !q) return App.renderTrash();
     let notes = LN.state.notes.slice();
     if (q) notes = notes.filter((n) => (n.title + '\n' + LN.noteText(n)).toLowerCase().includes(q));
     else if (nbId) notes = notes.filter((n) => n.notebookId === nbId);
-    notes.sort((a, b) => b.updated - a.updated);
+    notes.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.updated - a.updated);
     const nb = nbId && LN.getNotebook(nbId);
     $('#notes-heading').textContent = q ? `Results (${notes.length})` : nb ? nb.name : 'All notes';
     const cur = E().note && E().note.id;
@@ -37,13 +51,13 @@
       let snip = text.replace(/\s+/g, ' ').trim().slice(0, 90);
       if (q) { const i = text.toLowerCase().indexOf(q); if (i > 30) snip = '…' + text.slice(i - 25, i + 70).replace(/\s+/g, ' '); }
       const nbk = LN.getNotebook(n.notebookId);
-      const badges = [n.pages.some((p) => p.strokes.length) ? 'pen' : '', n.recordings.length ? 'mic' : '', n.pages.some((p) => p.bg) ? 'filepdf' : ''].filter(Boolean);
+      const badges = [n.pinned ? 'pin' : '', n.pages.some((p) => p.strokes.length) ? 'pen' : '', n.recordings.length ? 'mic' : '', n.pages.some((p) => p.bg) ? 'filepdf' : ''].filter(Boolean);
       return `<li><button class="note-item ${n.id === cur ? 'active' : ''}" data-note="${n.id}">
         <span class="ni-title"><span class="ni-dot" style="background:${nbk ? nbk.color : '#94a3b8'}"></span>${LN.esc(n.title || 'Untitled note')}</span>
         <span class="ni-snip">${LN.esc(snip) || '<em>Empty note</em>'}</span>
         <span class="ni-meta">${LN.relTime(n.updated)} ${badges.map((b) => LN.icon(b)).join('')}</span>
       </button></li>`;
-    }).join('') || `<li class="ni-empty">${q ? 'No notes match your search.' : 'No notes here yet.'}</li>`;
+    }).join('') || `<li class="ni-empty">${q ? 'No notes match your search.' : LN.state.notes.length ? 'No notes in this notebook yet.' : 'No notes yet. Press + to create one.'}</li>`;
   };
   App.renderLibrary = () => { App.renderNotebooks(); App.renderNotes(); };
 
@@ -57,8 +71,13 @@
   };
 
   App.newNote = () => {
-    const nbId = LN.state.ui.notebookId || (LN.state.notebooks[0] && LN.state.notebooks[0].id);
-    if (!nbId) { App.newNotebook(); return; }
+    let nbId = LN.state.ui.notebookId && LN.state.ui.notebookId !== TRASH ? LN.state.ui.notebookId : null;
+    if (!nbId || !LN.getNotebook(nbId)) nbId = LN.state.notebooks[0] && LN.state.notebooks[0].id;
+    if (!nbId) {
+      const nb = { id: LN.uid(), name: 'My Notebook', color: LN.NB_COLORS[0], created: Date.now() };
+      LN.state.notebooks.push(nb); nbId = nb.id;
+    }
+    if (LN.state.ui.notebookId === TRASH) LN.state.ui.notebookId = null;
     const note = LN.newNote(nbId, '');
     LN.state.notes.push(note);
     LN.touch(note);
@@ -74,15 +93,14 @@
     LN.state.ui.notebookId = nb.id;
     LN.save();
     App.renderLibrary();
-    if (!LN.state.notes.some((n) => n.notebookId === nb.id)) App.newNote();
+    App.newNote();
   };
 
   App.deleteNotebook = async (id) => {
     const nb = LN.getNotebook(id); if (!nb) return;
     const notes = LN.state.notes.filter((n) => n.notebookId === id);
-    if (!(await LN.confirm(`Delete “${nb.name}”?`, notes.length ? `This also deletes its ${notes.length} note${notes.length > 1 ? 's' : ''} and their recordings.` : 'This notebook is empty.'))) return;
-    notes.forEach((n) => n.recordings.forEach((r) => LN.db.del(r.id, 'blobs')));
-    LN.state.notes = LN.state.notes.filter((n) => n.notebookId !== id);
+    if (!(await LN.confirm(`Delete “${nb.name}”?`, notes.length ? `Its ${notes.length} note${notes.length > 1 ? 's' : ''} will move to the Trash, where you can restore ${notes.length > 1 ? 'them' : 'it'} for ${TRASH_DAYS} days.` : 'This notebook is empty.'))) return;
+    notes.forEach((n) => App.trashNote(n, true));
     LN.state.notebooks = LN.state.notebooks.filter((n) => n !== nb);
     LN.state.events.forEach((ev) => { if (ev.noteId && !LN.getNote(ev.noteId)) ev.noteId = null; });
     if (LN.state.ui.notebookId === id) LN.state.ui.notebookId = null;
@@ -91,8 +109,45 @@
     App.renderLibrary();
   };
 
+  App.trashNote = (note, quiet) => {
+    if (LN.collab.noteId === note.id) LN.collab.stop(true);
+    LN.state.notes = LN.state.notes.filter((n) => n !== note);
+    note.deletedAt = Date.now();
+    (LN.state.trash = LN.state.trash || []).push(note);
+    LN.save();
+    if (!quiet) LN.toast(`Moved “${note.title || 'Untitled note'}” to Trash.`);
+  };
+  App.trashAction = async (act, id) => {
+    const S = LN.state;
+    if (act === 'empty') {
+      if (!(await LN.confirm('Empty trash?', `${S.trash.length} note${S.trash.length === 1 ? '' : 's'} will be deleted forever.`, 'Empty trash'))) return;
+      S.trash.forEach((n) => n.recordings.forEach((r) => LN.db.del(r.id, 'blobs')));
+      S.trash = [];
+    } else {
+      const n = S.trash.find((x) => x.id === id); if (!n) return;
+      S.trash = S.trash.filter((x) => x !== n);
+      if (act === 'restore') {
+        delete n.deletedAt;
+        if (!LN.getNotebook(n.notebookId)) {
+          let nb = LN.state.notebooks.find((b) => b.name === 'Restored');
+          if (!nb) { nb = { id: LN.uid(), name: 'Restored', color: '#64748b', created: Date.now() }; S.notebooks.push(nb); }
+          n.notebookId = nb.id;
+        }
+        S.notes.push(n);
+        LN.toast(`Restored “${n.title || 'Untitled note'}”.`);
+      } else n.recordings.forEach((r) => LN.db.del(r.id, 'blobs'));
+    }
+    LN.save(); App.renderLibrary();
+  };
+  App.purgeTrash = () => {
+    const cutoff = Date.now() - TRASH_DAYS * 864e5;
+    const old = (LN.state.trash || []).filter((n) => n.deletedAt < cutoff);
+    old.forEach((n) => n.recordings.forEach((r) => LN.db.del(r.id, 'blobs')));
+    LN.state.trash = (LN.state.trash || []).filter((n) => n.deletedAt >= cutoff);
+  };
+
   App.firstNoteId = () => {
-    const nbId = LN.state.ui.notebookId;
+    const nbId = LN.state.ui.notebookId === TRASH ? null : LN.state.ui.notebookId;
     const list = LN.state.notes.filter((n) => !nbId || n.notebookId === nbId).sort((a, b) => b.updated - a.updated);
     return list[0] ? list[0].id : null;
   };
@@ -109,7 +164,7 @@
       LN.toast('Note file downloaded. Anyone with LataNote can import it.');
     } else if (cmd === 'duplicate') {
       const copy = JSON.parse(JSON.stringify(note));
-      copy.id = LN.uid(); copy.title = (note.title || 'Untitled note') + ' (copy)'; copy.recordings = [];
+      copy.id = LN.uid(); copy.title = (note.title || 'Untitled note') + ' (copy)'; copy.recordings = []; copy.pinned = false;
       copy.pages.forEach((p) => { p.id = LN.uid(); p.strokes.forEach((s) => delete s.rec); });
       copy.created = copy.updated = Date.now();
       LN.state.notes.push(copy); LN.touch(copy); App.openNote(copy.id);
@@ -118,15 +173,18 @@
       if (r) { note.notebookId = r.select; LN.touch(note); E().renderChip(); App.renderLibrary(); }
     } else if (cmd === 'clear-ink') E().clearInk();
     else if (cmd === 'delete') {
-      if (!(await LN.confirm(`Delete “${note.title || 'Untitled note'}”?`, 'The note, its pages and its recordings will be permanently removed.'))) return;
       LN.audio.stop();
-      note.recordings.forEach((r) => LN.db.del(r.id, 'blobs'));
-      LN.state.notes = LN.state.notes.filter((n) => n !== note);
-      LN.state.events.forEach((ev) => { if (ev.noteId === note.id) ev.noteId = null; });
-      LN.save();
+      App.trashNote(note);
       E().open(App.firstNoteId());
       App.renderLibrary();
-    } else if (cmd === 'add-page') E().addPage();
+    } else if (cmd === 'pin') {
+      note.pinned = !note.pinned; LN.save(); App.renderLibrary();
+      LN.toast(note.pinned ? 'Pinned to the top of the list.' : 'Unpinned.');
+    } else if (cmd === 'collab') LN.collab.openLivePanel();
+    else if (cmd === 'ocr') LN.extras.ocrNote();
+    else if (cmd === 'speak') LN.extras.speak();
+    else if (cmd === 'export-md') LN.extras.exportMarkdown();
+    else if (cmd === 'dictate') LN.extras.dictate(); else if (cmd === 'add-page') E().addPage();
     else if (cmd === 'import-pdf') $('#file-pdf').click();
     else if (cmd === 'image') { $('#file-image').click(); }
     else if (cmd === 'checklist') E().checklist();
@@ -240,9 +298,18 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
       LN.state.notes.push(n);
       LN.touch(n); App.openNote(n.id);
       LN.toast(`Imported “${n.title || 'Untitled note'}”.`);
+    } else if (data.type === 'latanote-notebook' && data.notebook && Array.isArray(data.notes)) {
+      const nb = Object.assign({}, data.notebook, { id: LN.uid(), created: Date.now() });
+      delete nb.shared;
+      LN.state.notebooks.push(nb);
+      data.notes.forEach((n) => { n.id = LN.uid(); n.notebookId = nb.id; n.recordings = []; n.cards = n.cards || []; n.updated = Date.now(); LN.state.notes.push(n); });
+      LN.state.ui.notebookId = nb.id;
+      LN.save(); App.renderLibrary(); E().open(App.firstNoteId());
+      LN.toast(`Imported notebook “${nb.name}” with ${data.notes.length} note${data.notes.length === 1 ? '' : 's'}.`);
     } else if (data.type === 'latanote-backup' && data.state && Array.isArray(data.state.notes)) {
       if (!(await LN.confirm('Restore this backup?', `This replaces everything on this device with ${data.state.notes.length} notes from ${data.exported ? new Date(data.exported).toLocaleString() : 'the backup'}.`, 'Restore'))) return;
-      LN.state = Object.assign({ notebooks: [], notes: [], events: [], settings: { penOnly: false }, ui: {} }, data.state);
+      LN.state = Object.assign({ notebooks: [], notes: [], events: [], trash: [], settings: { penOnly: false }, ui: {} }, data.state);
+      LN.state.ui.samplesRemoved = true;
       LN.save();
       App.renderLibrary();
       E().open(LN.state.ui.noteId && LN.getNote(LN.state.ui.noteId) ? LN.state.ui.noteId : App.firstNoteId());
@@ -262,7 +329,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
   };
   App.closeSidebarMobile = () => document.body.classList.remove('sidebar-open');
 
-  const setTheme = (t) => {
+  const setTheme = App.setTheme = (t) => {
     document.documentElement.dataset.theme = t;
     localStorage.setItem('latanote-theme', t);
     $('#theme-toggle').innerHTML = LN.icon(t === 'dark' ? 'sun' : 'moon');
@@ -277,16 +344,19 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
   };
   App.setTool = (name) => {
     LN.tool.name = name;
-    if (name !== 'eraser') LN.tool.color = toolColors[colorKey(name)];
+    if (name !== 'lasso' && LN.inkSel) LN.inkSel.clearSel();
+    if (name !== 'eraser' && name !== 'lasso') LN.tool.color = toolColors[colorKey(name)];
     $$('.tool').forEach((b) => b.classList.toggle('active', b.dataset.tool === name));
     document.body.dataset.tool = name;
     App.renderSwatches();
     if (E().mode !== 'draw') E().setMode('draw');
   };
   App.setColor = (c) => {
+    if (LN.inkSel && LN.tool.name === 'lasso') { LN.inkSel.recolorSel(c); return; }
     LN.tool.color = c;
-    if (LN.tool.name !== 'eraser') toolColors[colorKey(LN.tool.name)] = c;
+    if (LN.tool.name !== 'eraser' && LN.tool.name !== 'lasso') toolColors[colorKey(LN.tool.name)] = c;
     else { App.setTool('pen'); LN.tool.color = toolColors.pen = c; }
+    if (LN.tool.name === 'lasso') { App.setTool('pen'); LN.tool.color = toolColors.pen = c; }
     App.renderSwatches();
   };
 
@@ -296,7 +366,11 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     await LN.load();
     setTheme(document.documentElement.dataset.theme || 'light');
 
-    LN.audio.init(); LN.planner.init(); LN.study.init();
+    App.purgeTrash();
+    LN.audio.init(); LN.planner.init(); LN.study.init(); LN.extras.init();
+    LN.on('ink-selection', (on) => document.body.classList.toggle('has-sel', !!on));
+    $('#note-list').addEventListener('click', (e) => { const b = e.target.closest('[data-trash]'); if (b) { e.stopPropagation(); App.trashAction(b.dataset.trash, b.dataset.id); } });
+    $('#templates').addEventListener('click', (e) => { const b = e.target.closest('[data-tpl]'); if (b) E().applyTemplate(b.dataset.tpl); });
     LN.on('notes-changed', LN.debounce(() => { App.renderLibrary(); if (App.view === 'planner') LN.planner.render(); }, 300));
 
     // sidebar
@@ -310,7 +384,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
       App.renderLibrary();
       if (App.view !== 'notes') App.setView('notes');
       const cur = E().note;
-      if (!cur || (LN.state.ui.notebookId && cur.notebookId !== LN.state.ui.notebookId)) E().open(App.firstNoteId());
+      if (LN.state.ui.notebookId !== TRASH && (!cur || (LN.state.ui.notebookId && cur.notebookId !== LN.state.ui.notebookId))) E().open(App.firstNoteId());
       App.renderNotes();
     });
     $('#note-list').addEventListener('click', (e) => { const b = e.target.closest('[data-note]'); if (b) App.openNote(b.dataset.note); });
@@ -320,8 +394,6 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     $$('.view-btn').forEach((b) => b.addEventListener('click', () => { App.setView(b.dataset.view); App.closeSidebarMobile(); }));
     $$('[data-action="toggle-sidebar"]').forEach((b) => b.addEventListener('click', () => document.body.classList.toggle('sidebar-open')));
     $('#theme-toggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
-    $('#backup-btn').addEventListener('click', App.backup);
-    $('#import-btn').addEventListener('click', () => $('#file-import').click());
     $('#file-import').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) App.importFile(f); });
 
     // title
@@ -341,6 +413,7 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
       else if (b.dataset.color) App.setColor(b.dataset.color);
       else if (b.dataset.size) { LN.tool.size = +b.dataset.size; $$('#sizes .size').forEach((x) => x.classList.toggle('active', x === b)); }
       else if (b.dataset.zoom != null) E().setZoom(+b.dataset.zoom);
+      else if (b.dataset.sel && LN.inkSel) { const a = b.dataset.sel; if (a === 'delete') LN.inkSel.deleteSel(); else if (a === 'duplicate') LN.inkSel.duplicateSel(); else if (a === 'ocr') LN.extras.ocrSelection(); }
     });
     $('#block-select').addEventListener('change', (e) => E().exec('formatBlock', '<' + e.target.value + '>'));
     $('#fore-color').addEventListener('input', (e) => { $('#fore-bar').style.background = e.target.value; });
@@ -360,7 +433,11 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
 
     // more menu
     const menu = $('#more-menu');
-    $('#more-btn').addEventListener('click', (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; });
+    $('#more-btn').addEventListener('click', (e) => {
+      e.stopPropagation(); menu.hidden = !menu.hidden;
+      if (E().note) $('#pin-label').textContent = E().note.pinned ? 'Unpin note' : 'Pin note';
+      LN.extras.updateSpeakLabel();
+    });
     menu.addEventListener('click', (e) => { const b = e.target.closest('[data-cmd]'); if (!b) return; menu.hidden = true; App.noteCmd(b.dataset.cmd); });
     document.addEventListener('click', (e) => { if (!menu.hidden && !e.target.closest('.menu-wrap')) menu.hidden = true; });
     $('#empty').addEventListener('click', (e) => { if (e.target.closest('[data-cmd="new-note"]')) App.newNote(); });
@@ -407,13 +484,19 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
       if (mod && e.key.toLowerCase() === 'y' && !inField) { e.preventDefault(); E().doRedo(); return; }
       if (mod && e.altKey && e.key.toLowerCase() === 'n') { e.preventDefault(); App.newNote(); return; }
       if (mod && e.key.toLowerCase() === 'k' && !e.shiftKey) { e.preventDefault(); document.body.classList.add('sidebar-open'); $('#search').focus(); return; }
-      if (inField || mod || e.altKey || App.view !== 'notes' || !E().note) return;
+      if (inField || mod || e.altKey) return;
+      if (e.key === 'f' || e.key === 'F') { LN.extras.toggleFullscreen(); return; }
+      if (e.key === '?') { LN.extras.shortcuts(); return; }
+      if (App.view !== 'notes' || !E().note) return;
+      if ((e.key === 'Delete' || e.key === 'Backspace') && LN.inkSel) { e.preventDefault(); LN.inkSel.deleteSel(); return; }
+      if (e.key === 'Escape' && LN.inkSel) { LN.inkSel.clearSel(); return; }
       const k = e.key.toLowerCase();
       if (k === 't') E().setMode('type');
       else if (k === 'd') E().setMode('draw');
       else if (k === 'p') App.setTool('pen');
       else if (k === 'h') App.setTool('highlighter');
       else if (k === 'e') App.setTool('eraser');
+      else if (k === 'l') App.setTool('lasso');
       else if (k === 'escape') { menu.hidden = true; }
     });
 
@@ -426,13 +509,23 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     App.renderLibrary();
     const params = new URLSearchParams(location.search);
     if (params.get('view') === 'planner') App.setView('planner');
+    if (params.get('new') === '1') App.newNote();
+    LN.collab.checkInvite();
+    // opened by double-clicking a .latanote file (installed app)
+    if ('launchQueue' in window) window.launchQueue.setConsumer(async (params) => { for (const h of params.files || []) App.importFile(await h.getFile()); });
   };
 
   App.nbMenu = async (id) => {
     const nb = LN.getNotebook(id); if (!nb) return;
-    const r = await LN.dialog({ title: 'Edit notebook', input: { value: nb.name }, colors: LN.NB_COLORS, color: nb.color, select: { options: [{ value: 'keep', label: 'Keep notebook' }, { value: 'delete', label: 'Delete notebook…' }], value: 'keep' }, ok: 'Save' });
+    const r = await LN.dialog({ title: 'Edit notebook', input: { value: nb.name }, colors: LN.NB_COLORS, color: nb.color, select: { options: [{ value: 'keep', label: 'Save changes' }, { value: 'export', label: 'Share notebook as a file' }, { value: 'delete', label: 'Delete notebook…' }], value: 'keep' }, ok: 'OK' });
     if (!r) return;
     if (r.select === 'delete') return App.deleteNotebook(id);
+    if (r.select === 'export') {
+      const notes = LN.state.notes.filter((n) => n.notebookId === id).map((n) => Object.assign({}, n, { recordings: [] }));
+      LN.download(`${LN.safeName(nb.name)}.latanote`, JSON.stringify({ type: 'latanote-notebook', version: 1, notebook: { name: nb.name, color: nb.color }, notes }), 'application/json');
+      LN.toast('Notebook file downloaded. Share it with your class or team; they can import it from Settings.');
+      return;
+    }
     if (r.value) nb.name = r.value;
     if (r.color) nb.color = r.color;
     LN.save(); App.renderLibrary(); E().renderChip();

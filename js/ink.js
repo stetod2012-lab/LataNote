@@ -35,6 +35,30 @@
     return false;
   }
 
+  function strokePts(s) { return s.pts || shapePolyline(s); }
+  function bbox(strokes) {
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    strokes.forEach((s) => {
+      const pad = (s.tool === 'highlighter' ? s.size * 2 : s.size / 2) + 2;
+      strokePts(s).forEach((p) => { x1 = Math.min(x1, p[0] - pad); y1 = Math.min(y1, p[1] - pad); x2 = Math.max(x2, p[0] + pad); y2 = Math.max(y2, p[1] + pad); });
+    });
+    return [x1, y1, x2, y2];
+  }
+  function inPoly(p, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [xi, yi] = poly[i], [xj, yj] = poly[j];
+      if ((yi > p[1]) !== (yj > p[1]) && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function translate(s, dx, dy) {
+    if (s.pts) s.pts.forEach((p) => { p[0] += dx; p[1] += dy; });
+    else { s.a = [s.a[0] + dx, s.a[1] + dy]; s.b = [s.b[0] + dx, s.b[1] + dy]; }
+  }
+  const clone = (s) => JSON.parse(JSON.stringify(s));
+  LN.inkSel = null; // the Ink instance that currently holds a lasso selection
+
   function penWidth(s, pr) { return s.tool === 'pen' ? Math.max(0.6, s.size * (0.35 + pr * 1.3)) : s.size; }
 
   LN.drawStroke = function (g, s, playback) {
@@ -141,8 +165,28 @@
       try { this.c.setPointerCapture(e.pointerId); } catch (_) { /* noop */ }
       const t = LN.tool, p = this.pos(e);
       if (t.name === 'eraser') {
+        this.clearSel();
         this.before = this.page.strokes.slice(); this.erasing = true; this.erase(p); return;
       }
+      if (t.name === 'lasso') {
+        if (this.sel && this.sel.length) {
+          const [x1, y1, x2, y2] = bbox(this.sel);
+          if (p[0] >= x1 - 8 && p[0] <= x2 + 8 && p[1] >= y1 - 8 && p[1] <= y2 + 8) {
+            // start moving the selection; swap in copies so undo keeps the originals
+            const before = this.page.strokes.slice();
+            const orig = this.sel, copies = orig.map(clone);
+            this.page.strokes = this.page.strokes.map((st) => { const i = orig.indexOf(st); return i >= 0 ? copies[i] : st; });
+            this.sel = copies;
+            this.drag = { before, orig, last: p, moved: false };
+            return;
+          }
+        }
+        this.clearSel();
+        this.lasso = [p];
+        this.schedule();
+        return;
+      }
+      this.clearSel();
       this.cur = SHAPES.includes(t.name)
         ? { tool: t.name, color: t.color, size: t.size, a: p.slice(0, 2), b: p.slice(0, 2) }
         : { tool: t.name, color: t.color, size: t.size, pts: [p] };
@@ -158,6 +202,13 @@
       }
       if (e.pointerId !== this.pid) return;
       if (this.erasing) { this.erase(this.pos(e)); return; }
+      if (this.drag) {
+        const p = this.pos(e), dx = p[0] - this.drag.last[0], dy = p[1] - this.drag.last[1];
+        this.sel.forEach((st) => translate(st, dx, dy));
+        this.drag.last = p; this.drag.moved = true;
+        this.schedule(); return;
+      }
+      if (this.lasso) { this.lasso.push(this.pos(e)); this.schedule(); return; }
       if (!this.cur) return;
       e.preventDefault();
       if (this.cur.pts) {
@@ -195,6 +246,24 @@
         if (this.before.length !== this.page.strokes.length) this.host.commit(this.page, this.before);
         return;
       }
+      if (this.drag) {
+        const d = this.drag; this.drag = null;
+        this.sel.forEach((st) => { if (st.pts) st.pts.forEach((q) => { q[0] = r1(q[0]); q[1] = r1(q[1]); }); else { st.a = st.a.map(r1); st.b = st.b.map(r1); } });
+        if (d.moved) this.host.commit(this.page, d.before); else { this.page.strokes = d.before; this.sel = d.orig; }
+        this.render(); return;
+      }
+      if (this.lasso) {
+        const poly = this.lasso; this.lasso = null;
+        if (poly.length > 3) {
+          const sel = this.page.strokes.filter((st) => {
+            const pts = strokePts(st);
+            const inside = pts.filter((q) => inPoly(q, poly)).length;
+            return inside / pts.length >= 0.6;
+          });
+          this.setSel(sel);
+        }
+        this.render(); return;
+      }
       if (!this.cur) return;
       const s = this.cur; this.cur = null;
       if (s.pts) {
@@ -214,8 +283,61 @@
       const keep = this.page.strokes.filter((s) => !hit(s, p, r));
       if (keep.length !== this.page.strokes.length) { this.page.strokes = keep; this.render(); }
     }
+    setSel(sel) {
+      if (LN.inkSel && LN.inkSel !== this) LN.inkSel.clearSel();
+      this.sel = sel.length ? sel : null;
+      LN.inkSel = this.sel ? this : null;
+      LN.emit('ink-selection', !!this.sel);
+      this.render();
+    }
+    clearSel() {
+      if (!this.sel) return;
+      this.sel = null;
+      if (LN.inkSel === this) { LN.inkSel = null; LN.emit('ink-selection', false); }
+      this.render();
+    }
+    deleteSel() {
+      if (!this.sel) return;
+      const before = this.page.strokes.slice();
+      this.page.strokes = this.page.strokes.filter((st) => !this.sel.includes(st));
+      this.host.commit(this.page, before);
+      this.clearSel();
+    }
+    duplicateSel() {
+      if (!this.sel) return;
+      const before = this.page.strokes.slice();
+      const copies = this.sel.map(clone);
+      copies.forEach((st) => { delete st.rec; translate(st, 24, 24); });
+      this.page.strokes = this.page.strokes.concat(copies);
+      this.host.commit(this.page, before);
+      this.setSel(copies);
+    }
+    recolorSel(color) {
+      if (!this.sel) return;
+      const before = this.page.strokes.slice();
+      const copies = this.sel.map((st) => Object.assign(clone(st), { color }));
+      this.page.strokes = this.page.strokes.map((st) => { const i = this.sel.indexOf(st); return i >= 0 ? copies[i] : st; });
+      this.sel = copies;
+      this.host.commit(this.page, before);
+      this.render();
+    }
     schedule() { if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = 0; this.render(); }); }
-    render() { LN.renderStrokes(this.c, this.page.strokes, this.w, this.h, this.res, LN.audio && LN.audio.playback, this.cur); }
+    render() {
+      LN.renderStrokes(this.c, this.page.strokes, this.w, this.h, this.res, LN.audio && LN.audio.playback, this.cur);
+      if (!this.sel && !this.lasso) return;
+      const g = this.c.getContext('2d');
+      g.save();
+      g.setLineDash([6, 5]); g.lineWidth = 1.5; g.strokeStyle = '#4f46e5'; g.fillStyle = 'rgba(79,70,229,.07)';
+      if (this.lasso) {
+        g.beginPath(); this.lasso.forEach((q, i) => (i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]))); g.closePath(); g.fill(); g.stroke();
+      }
+      if (this.sel) {
+        const [x1, y1, x2, y2] = bbox(this.sel);
+        g.fillRect(x1 - 6, y1 - 6, x2 - x1 + 12, y2 - y1 + 12);
+        g.strokeRect(x1 - 6, y1 - 6, x2 - x1 + 12, y2 - y1 + 12);
+      }
+      g.restore();
+    }
   }
   LN.Ink = Ink;
 })();

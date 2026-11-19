@@ -7,6 +7,8 @@
   <meta name="description" content="LataNote combines handwriting, typing, drawing, document editing, audio recording, PDF annotation, planning, presenting and an AI-powered study assistant in one digital notebook.">
   <meta name="theme-color" content="#4f46e5">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;500;600;700;800&display=swap">
@@ -24,7 +26,7 @@
         <a href="#features">Features</a>
         <a href="#write">Your way</a>
         <a href="#study">Study</a>
-        <a href="#plans">Plans</a>
+        <a href="#free">Free</a>
         <a href="#faq">FAQ</a>
       </nav>
       <div class="nav-cta">
@@ -48,7 +50,7 @@
             <a class="btn btn-primary btn-lg" href="app.html">Start writing. It’s free</a>
             <a class="btn btn-ghost btn-lg" href="#features">See what’s inside</a>
           </div>
-          <p class="hero-note">Runs in your browser. No account needed. Your notes stay on your device.</p>
+          <p class="hero-note">100% free, every feature. No account, no ads, no subscriptions. Install it on any device and it works offline.</p>
         </div>
 
         <div class="hero-art" aria-hidden="true">
@@ -123,47 +125,62 @@
           <article class="feature">
             <div class="f-ico" style="--c:#6366f1"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
             <h3>Natural handwriting</h3>
-            <p>Pressure-sensitive pen, highlighter and eraser with smooth, low-latency ink. Turn on palm rejection so only your stylus draws.</p>
+            <p>Pressure-sensitive pen, highlighter and eraser with smooth ink. Stylus-only mode stops your palm from leaving marks.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#4f46e5"><svg class="ico" viewBox="0 0 24 24"><path d="M3.3 14A7 7 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1"/><path d="M5 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg></div>
+            <h3>Lasso &amp; edit ink</h3>
+            <p>Circle any handwriting to move it, recolor it, duplicate it or delete it.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#0891b2"><svg class="ico" viewBox="0 0 24 24"><path d="M3 7V3h4"/><path d="M17 3h4v4"/><path d="M21 17v4h-4"/><path d="M7 21H3v-4"/><path d="M7 12h10"/><path d="M7 8h6"/><path d="M7 16h8"/></svg></div>
+            <h3>Handwriting to text</h3>
+            <p>Turn your handwriting into typed text, and search what you wrote by hand. Recognition runs on your device.</p>
           </article>
           <article class="feature">
             <div class="f-ico" style="--c:#0ea5e9"><svg class="ico" viewBox="0 0 24 24"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg></div>
             <h3>Typing &amp; documents</h3>
-            <p>Headings, lists, checklists, tables, links and images. Structure a full document, or type a quick line between your sketches.</p>
+            <p>Headings, checklists, tables, links, images and dictation. Start from templates for lectures, meetings, journals and more.</p>
           </article>
           <article class="feature">
             <div class="f-ico" style="--c:#10b981"><svg class="ico" viewBox="0 0 24 24"><path d="M5 19 19 5"/><path d="M9 5h10v10"/><path d="M4 5h6v6H4z"/></svg></div>
             <h3>Drawing &amp; diagrams</h3>
-            <p>Lines, arrows, rectangles and ellipses on blank, lined, grid, dotted or Cornell paper. Sketch it as fast as you think it.</p>
+            <p>Lines, arrows, rectangles and ellipses on lined, grid, dotted, Cornell or blank paper.</p>
           </article>
           <article class="feature">
             <div class="f-ico" style="--c:#e11d48"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></div>
-            <h3>Audio that syncs to ink</h3>
-            <p>Record an entire lesson while you write. On playback, your ink appears in step with the audio, so you can hear what was said as each note was written.</p>
+            <h3>Audio synced to ink</h3>
+            <p>Record whole lessons while you write. On playback, your notes reappear in step with the audio.</p>
           </article>
           <article class="feature">
             <div class="f-ico" style="--c:#f59e0b"><svg class="ico" viewBox="0 0 24 24"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/><path d="M8 14l3 3 5-6"/></svg></div>
             <h3>PDF &amp; image annotation</h3>
-            <p>Import slides, worksheets and textbook chapters. Every page becomes paper you can write, highlight and type on.</p>
-          </article>
-          <article class="feature">
-            <div class="f-ico" style="--c:#8b5cf6"><svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18v15H3z"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/></svg></div>
-            <h3>Academic planner</h3>
-            <p>Classes, tasks, exams and events on one calendar, each linked to the notes that go with it. Upcoming deadlines always in view.</p>
-          </article>
-          <article class="feature">
-            <div class="f-ico" style="--c:#14b8a6"><svg class="ico" viewBox="0 0 24 24"><path d="M2 4h20"/><path d="M4 4v11h16V4"/><path d="M12 15v4"/><path d="M8 21l4-2 4 2"/></svg></div>
-            <h3>Present from your notes</h3>
-            <p>Turn any notebook into a full-screen presentation with a built-in laser pointer. No exporting or reformatting.</p>
+            <p>Import slides, worksheets and textbook chapters. Every page becomes paper you can write on.</p>
           </article>
           <article class="feature">
             <div class="f-ico" style="--c:#ec4899"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></div>
-            <h3>AI study assistant</h3>
-            <p>Summaries, key terms, flashcards with spaced repetition, practice quizzes and answers drawn from your own notes.</p>
+            <h3>AI study tutor</h3>
+            <p>Chat with a tutor about your notes, plus summaries, flashcards with spaced repetition, quizzes and answers.</p>
           </article>
           <article class="feature">
-            <div class="f-ico" style="--c:#64748b"><svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg></div>
-            <h3>Organize &amp; share</h3>
-            <p>Color-coded notebooks, instant search across everything, and one-click export to HTML, PDF or a shareable note file.</p>
+            <div class="f-ico" style="--c:#16a34a"><svg class="ico" viewBox="0 0 24 24"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M2 21v-1a6 6 0 0 1 12 0v1"/><path d="M16 3.5a4 4 0 0 1 0 7"/><path d="M22 21v-1a6 6 0 0 0-4-5.6"/></svg></div>
+            <h3>Live collaboration</h3>
+            <p>Share a link and edit a note together in real time, including handwriting. No accounts needed.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#7c3aed"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h12v9H4z"/><path d="M2 18h16"/><path d="M18 9h4v11h-4z"/></svg></div>
+            <h3>Sync your devices</h3>
+            <p>Merge notes between your phone, tablet and computer with a 6-digit code, directly from device to device.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#8b5cf6"><svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18v15H3z"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/></svg></div>
+            <h3>Planner &amp; focus timer</h3>
+            <p>Classes, tasks and exams linked to your notes, plus a Pomodoro timer to keep you on track.</p>
+          </article>
+          <article class="feature">
+            <div class="f-ico" style="--c:#14b8a6"><svg class="ico" viewBox="0 0 24 24"><path d="M8 3H3v5"/><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M16 21h5v-5"/></svg></div>
+            <h3>Full screen, anywhere</h3>
+            <p>Distraction-free full screen, presentation mode with a laser pointer, and an installable app that works offline.</p>
           </article>
         </div>
       </div>
@@ -255,6 +272,7 @@
             <div><strong>Flashcards</strong><span>Generated from definitions in your notes. Spaced repetition brings back the cards you miss more often.</span></div>
             <div><strong>Quiz</strong><span>Multiple-choice and fill-in-the-blank questions built from your material, with your score at the end.</span></div>
             <div><strong>Ask your notes</strong><span>Type a question and get the most relevant passages from one note or every notebook.</span></div>
+            <div><strong>Tutor chat</strong><span>Talk through a topic, get quizzed one question at a time, or ask for a study plan built around your upcoming exams.</span></div>
           </div>
         </div>
         <div class="study-art" aria-hidden="true">
@@ -270,56 +288,21 @@
       </div>
     </section>
 
-    <!-- PLANS -->
-    <section class="section alt" id="plans">
+    <!-- FREE -->
+    <section class="section alt" id="free">
       <div class="wrap">
         <div class="section-head">
-          <p class="eyebrow">Devices &amp; plans</p>
-          <h2>Start free and grow into it</h2>
-          <p class="sub">LataNote runs in any modern browser on desktop, tablet and phone. Some tools and advanced capabilities can depend on your operating system, subscription plan and account configuration.</p>
+          <p class="eyebrow">Free means free</p>
+          <h2>Every feature. Every device. $0.</h2>
+          <p class="sub">There are no plans, trials or locked features. LataNote runs in any modern browser on desktop, tablet and phone. A few tools depend on what your browser supports, like microphone access, dictation and the built-in AI model.</p>
         </div>
-        <div class="plans">
-          <article class="plan">
-            <h3>Free</h3>
-            <p class="price">$0</p>
-            <p class="plan-sub">Everything you need to take great notes.</p>
-            <ul class="checks">
-              <li>Unlimited notebooks &amp; pages</li>
-              <li>Handwriting, typing &amp; drawing</li>
-              <li>Audio recording &amp; PDF import</li>
-              <li>Planner &amp; presentation mode</li>
-              <li>On-device study assistant</li>
-            </ul>
-            <a class="btn btn-ghost" href="app.html">Open the app</a>
-          </article>
-          <article class="plan featured">
-            <span class="badge">Most popular</span>
-            <h3>Plus</h3>
-            <p class="price">$3.99<small>/month</small></p>
-            <p class="plan-sub">For students and professionals who live in their notes.</p>
-            <ul class="checks">
-              <li>Everything in Free</li>
-              <li>Sync across all your devices</li>
-              <li>Handwriting recognition &amp; search</li>
-              <li>Advanced AI tutoring &amp; explanations</li>
-              <li>Real-time collaboration</li>
-            </ul>
-            <a class="btn btn-primary" href="app.html">Try it now</a>
-          </article>
-          <article class="plan">
-            <h3>Campus &amp; Teams</h3>
-            <p class="price">Custom</p>
-            <p class="plan-sub">For schools, classrooms and organizations.</p>
-            <ul class="checks">
-              <li>Everything in Plus</li>
-              <li>Shared class notebooks</li>
-              <li>Admin console &amp; SSO</li>
-              <li>Managed device deployment</li>
-              <li>Priority support</li>
-            </ul>
-            <a class="btn btn-ghost" href="#faq">Learn more</a>
-          </article>
+        <div class="free-grid">
+          <div class="free-card"><b>No account</b><span>Open it and start writing. Nothing to sign up for.</span></div>
+          <div class="free-card"><b>Private by design</b><span>Notes live on your device. Sync and collaboration go directly between devices.</span></div>
+          <div class="free-card"><b>Works offline</b><span>Install it to your home screen or desktop and use it without internet.</span></div>
+          <div class="free-card"><b>Yours to keep</b><span>Export to HTML, PDF, Markdown or a full backup whenever you want.</span></div>
         </div>
+        <div class="center-cta"><a class="btn btn-primary btn-lg" href="app.html">Open LataNote. It’s free</a></div>
       </div>
     </section>
 
@@ -331,24 +314,32 @@
           <h2>Questions, answered</h2>
         </div>
         <details>
+          <summary>Is it really free?</summary>
+          <p>Yes. Every feature, including the study tutor, handwriting to text, live collaboration and device sync, is free. There are no paid plans.</p>
+        </details>
+        <details>
           <summary>Do I need an account?</summary>
-          <p>No. Open the app and start writing. Your notebooks, recordings and planner are saved in your browser’s local storage on this device. You can export a full backup any time and restore it on another device.</p>
+          <p>No. Open the app and start writing. Your notebooks, recordings and planner are saved in your browser on this device. Use <em>Settings → Download a backup</em> any time.</p>
+        </details>
+        <details>
+          <summary>How do I get my notes on another device?</summary>
+          <p>Open LataNote on both devices, go to <em>Settings → Sync with another device</em>, and type the 6-digit code from one device into the other. Notes merge in both directions, and newer edits win.</p>
+        </details>
+        <details>
+          <summary>How does live collaboration work?</summary>
+          <p>Open a note, choose <em>Collaborate live</em> from the ••• menu, and share the link. Everyone with the link edits the note together in real time, including handwriting. Keep your tab open during the session.</p>
+        </details>
+        <details>
+          <summary>Where does the study tutor send my notes?</summary>
+          <p>Nowhere. If your browser has a built-in on-device AI model, as recent versions of Chrome can, the tutor uses it. Otherwise it uses LataNote’s own engine. Either way, your notes stay on your device.</p>
+        </details>
+        <details>
+          <summary>How do I go full screen?</summary>
+          <p>Press <kbd>F</kbd> or the full-screen button at the top of a note. For an app-like experience, install LataNote from <em>Settings → Install LataNote</em>, or in Safari use Share → Add to Home Screen.</p>
         </details>
         <details>
           <summary>Does it work with a stylus?</summary>
-          <p>Yes. LataNote reads pen pressure from styluses such as Apple Pencil, Surface Pen and S Pen. Turn on <em>Stylus only</em> in the drawing toolbar so a resting palm doesn’t leave marks.</p>
-        </details>
-        <details>
-          <summary>Where does the study assistant send my notes?</summary>
-          <p>Nowhere. The built-in assistant runs entirely in your browser, analyzing your text to produce summaries, flashcards, quizzes and answers. Your notes never leave your device.</p>
-        </details>
-        <details>
-          <summary>Can I annotate PDFs?</summary>
-          <p>Yes. Import a PDF and every page is added to your note as a background you can write, draw, highlight and type over. You can also import images such as photos of a whiteboard.</p>
-        </details>
-        <details>
-          <summary>How do I share or print my notes?</summary>
-          <p>Use the note menu to export a self-contained HTML file, print or save as PDF, or share a <code>.latanote</code> file that someone else can import into their own LataNote.</p>
+          <p>Yes. LataNote reads pen pressure from styluses such as Apple Pencil, Surface Pen and S Pen. Turn on <em>Stylus only</em> so a resting palm doesn’t leave marks.</p>
         </details>
       </div>
     </section>
@@ -369,7 +360,7 @@
       <nav aria-label="Footer">
         <a href="#features">Features</a>
         <a href="#study">Study</a>
-        <a href="#plans">Plans</a>
+        <a href="#free">Free</a>
         <a href="#faq">FAQ</a>
         <a href="app.html">Open app</a>
       </nav>
@@ -388,6 +379,7 @@
         localStorage.setItem('latanote-theme', next);
       });
       document.getElementById('year').textContent = new Date().getFullYear();
+      if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(function () {});
     })();
   </script>
 </body>

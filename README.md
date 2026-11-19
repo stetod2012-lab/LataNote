@@ -9,17 +9,25 @@ LataNote combines a notebook, textbook, planner, document editor, recording stud
 
 ## Features
 
+Everything is free. There are no paid plans.
+
 | Area | What you can do |
 | --- | --- |
-| **Handwriting & drawing** | Pressure-sensitive pen, highlighter, stroke eraser, lines, arrows, rectangles, ellipses (hold <kbd>Shift</kbd> to snap). Optional *Stylus only* mode for palm rejection, where fingers scroll instead of draw. Undo/redo. |
-| **Typing & documents** | Rich text on the same page as your ink: headings, bold/italic/underline/strike, text color, highlight, bulleted/numbered lists, checklists, tables, links, images, quotes and code. |
-| **Paper** | Lined, grid, dotted, Cornell and blank. Pages grow as you type, and you can add, reorder and delete them. |
-| **Audio** | Record lessons into a note. Each stroke written while recording is timestamped, and on playback the ink rebuilds in sync with the audio. Rename and download recordings. |
-| **PDF & image annotation** | Import a PDF (rendered with bundled pdf.js) or an image. Every page becomes a background you can write, highlight and type over. Drag and drop works too. |
-| **Planner** | Month calendar with classes, tasks, exams and events, each optionally linked to a note. Includes a day agenda and a rolling 14-day upcoming list. |
-| **Present** | Full-screen presentation of any note, with keyboard navigation and a laser pointer. |
-| **Study assistant** | Runs entirely in the browser: extractive summaries and key terms, auto-generated flashcards with spaced repetition, multiple-choice and fill-in-the-blank quizzes, and "Ask your notes" passage search across one note or all notebooks. |
-| **Organize & share** | Color-coded notebooks, full-text search, duplicate and move notes. Export to HTML, print or save as PDF, share a `.latanote` file, and back up or restore everything as JSON. Light and dark themes. Responsive on desktop, tablet and phone. |
+| **Handwriting & drawing** | Pressure-sensitive pen, highlighter, stroke eraser, lines, arrows, rectangles, ellipses (<kbd>Shift</kbd> snaps). Stylus-only palm rejection. Undo/redo. |
+| **Lasso** | Circle ink to move, recolor, duplicate, delete or convert it to text. |
+| **Handwriting to text** | On-device recognition (the browser's handwriting recognizer where available, otherwise bundled Tesseract OCR). Recognized handwriting becomes searchable and feeds the study tools. |
+| **Typing & documents** | Rich text on the same page as ink: headings, formatting, colors, lists, checklists, tables, links, images, quotes and code. Includes speech-to-text dictation and read aloud. |
+| **Templates** | Lecture (Cornell), meeting, to-do, daily journal, study guide, and sketch. |
+| **Paper** | Lined, grid, dotted, Cornell and blank. Add, reorder and delete pages. Zoom with Ctrl+scroll or pinch. |
+| **Audio** | Record lessons into a note. Ink written while recording replays in sync with the audio. |
+| **PDF & image annotation** | Import PDFs (bundled pdf.js) or images and write on every page. Drag and drop works too. |
+| **Study assistant** | Summaries and key terms, flashcards with spaced repetition, quizzes, "Ask your notes", and a **Tutor** chat. The tutor uses the browser's built-in on-device AI (Chrome's Prompt API) when available, or a built-in offline engine otherwise. |
+| **Live collaboration** | Share a link to edit a note together in real time, including ink, over peer-to-peer WebRTC (PeerJS). |
+| **Device sync** | Merge all notes between two devices with a 6-digit code, peer to peer. Newer edits win. |
+| **Planner & focus** | Month calendar of classes, tasks, exams and events linked to notes, plus a Pomodoro focus timer. |
+| **Full screen & present** | Full-screen mode (<kbd>F</kbd>), with focus mode on iPhone. Full-screen presentation with a laser pointer. |
+| **Installable & offline** | Progressive web app with a manifest and service worker: install to the home screen or desktop, works offline, and opens `.latanote` files. |
+| **Organize & share** | Notebooks, pinned notes, full-text search (including handwriting), Trash with 30-day restore. Export to HTML, Markdown or PDF (print), and share notes or whole notebooks as `.latanote` files. Backup and restore, dark mode, responsive layout. |
 
 ## Running it
 
@@ -35,14 +43,23 @@ You can also open `index.html` directly from disk. A local server is recommended
 
 ## Data & privacy
 
-Everything is stored locally in the browser with IndexedDB. Audio recordings are stored as blobs on the device. Nothing is sent to a server. Use the sidebar's backup button to export your notebooks. Recordings stay on the device and aren't included in backups or shared note files.
+Everything is stored locally in the browser (IndexedDB), and LataNote starts with an empty notebook. Nothing is uploaded to a server:
+
+- **Live collaboration and device sync** send data directly between browsers over WebRTC. The free public PeerJS broker (`0.peerjs.com`) is used only to introduce the two devices. To use your own broker, set `window.LN_PEER_OPTS = { host, port, path, secure }` before the scripts load.
+- **Study tools, the tutor and handwriting recognition** run on the device.
+- **Dictation** uses the browser's speech recognition. In some browsers (such as Chrome), the browser vendor processes the audio.
+
+Audio recordings stay on the device that recorded them. They aren't included in backups, sync or shared files.
 
 ## Keyboard shortcuts
 
 | Key | Action |
 | --- | --- |
 | `T` / `D` | Type mode / Draw mode |
-| `P` / `H` / `E` | Pen / highlighter / eraser |
+| `P` / `H` / `E` / `L` | Pen / highlighter / eraser / lasso |
+| `Del` | Delete lasso selection |
+| `F` | Full screen |
+| `?` | Shortcut list |
 | `Ctrl/⌘ + Z`, `Ctrl/⌘ + Shift + Z` | Undo / redo ink |
 | `Ctrl/⌘ + K` | Search notes |
 | `Ctrl/⌘ + Alt + N` | New note |
@@ -52,21 +69,19 @@ Everything is stored locally in the browser with IndexedDB. Audio recordings are
 ## Project layout
 
 ```
-index.html            landing page
-app.html              application shell
-css/base.css          shared design tokens
-css/site.css          landing page styles
-css/app.css           app styles (incl. print)
-js/core.js            storage, state, icons, dialogs, sample content
-js/ink.js             ink engine
-js/editor.js          pages, text layer, formatting, PDF/image import
-js/audio.js           recording & ink-synced playback
-js/planner.js         calendar & agenda
-js/study.js           study assistant
-js/app.js             app controller, export, presenting, shortcuts
-js/vendor/pdfjs/      pdf.js 3.11.174 (Apache-2.0)
+index.html               landing page
+app.html                 application shell
+manifest.webmanifest     install metadata
+sw.js                    service worker (offline support)
+css/                     base tokens, landing page and app styles
+js/core.js               storage, state, icons, dialogs
+js/ink.js                ink engine and lasso
+js/editor.js             pages, text layer, templates, formatting, imports
+js/audio.js              recording and ink-synced playback
+js/planner.js            calendar and agenda
+js/study.js              study assistant and tutor
+js/extras.js             full screen, install, timer, dictation, read aloud, Markdown, handwriting to text, settings
+js/collab.js             live collaboration and device sync
+js/app.js                app controller
+js/vendor/               pdf.js 3.11 (Apache-2.0), Tesseract.js 7 (Apache-2.0), PeerJS 1.5 (MIT)
 ```
-
-## Notes on plans
-
-The landing page describes Free, Plus and Campus & Teams plans. The prices and the Plus/Teams-only capabilities (cloud sync, handwriting recognition, real-time collaboration, admin console) are placeholders for future product decisions. Everything in the web app today works without an account.

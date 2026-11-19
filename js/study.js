@@ -69,7 +69,7 @@
       front = front.replace(/^(the|a|an)\s+/i, '').replace(/[\s*•\-–]+$/, '').trim();
       back = back.trim().replace(/^\w/, (c) => c.toUpperCase());
       const key = front.toLowerCase();
-      if (!front || front.length < 2 || back.length < 8 || seen.has(key) || front.split(/\s+/).length > 7) return;
+      if (/^term$/i.test(front) || /^definition\.?$/i.test(back) || !front || front.length < 2 || back.length < 8 || seen.has(key) || front.split(/\s+/).length > 7) return;
       seen.add(key); out.push({ front, back });
     };
     text.split('\n').forEach((line) => {
@@ -142,7 +142,7 @@
     $$('#study .tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === S.tab));
     const note = LN.editor.note;
     if (!note) { body().innerHTML = noNote; return; }
-    ({ summary: renderSummary, cards: renderCards, quiz: renderQuiz, ask: renderAsk })[S.tab](note);
+    ({ summary: renderSummary, cards: renderCards, quiz: renderQuiz, ask: renderAsk, tutor: renderTutor })[S.tab](note);
   };
 
   function renderSummary(note) {
@@ -264,6 +264,139 @@
         : (r.def ? '' : '<div class="st-empty">I couldn’t find anything about that in your notes. Try different words, or search all notebooks.</div>')) : ''}`;
   }
 
+  /* ---------- tutor (chat) ---------- */
+  const LM = () => self.LanguageModel || (self.ai && self.ai.languageModel) || null;
+  S.aiStatus = async () => {
+    const lm = LM(); if (!lm) return 'none';
+    try {
+      if (lm.availability) return await lm.availability();
+      const c = await lm.capabilities();
+      return c.available === 'readily' ? 'available' : c.available === 'after-download' ? 'downloadable' : 'unavailable';
+    } catch (e) { return 'none'; }
+  };
+  const tutorState = (note) => {
+    if (!S.tutor || S.tutor.noteId !== note.id) {
+      if (S.tutor && S.tutor.session) { try { S.tutor.session.destroy(); } catch (e) { /* noop */ } }
+      S.tutor = { noteId: note.id, msgs: [], busy: false, session: null, pending: null, ai: S.tutor ? S.tutor.ai : null };
+    }
+    return S.tutor;
+  };
+  const fmtMsg = (t) => LN.esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^[-•] /gm, '• ').replace(/\n/g, '<br>');
+
+  function renderTutor(note) {
+    const T = tutorState(note);
+    if (T.ai === null) { T.ai = 'checking'; S.aiStatus().then((a) => { T.ai = a; S.render(); }); }
+    const mode = T.ai === 'available' ? `<span class="ai-badge on">${LN.icon('sparkles')} On-device AI</span>`
+      : T.ai === 'downloadable' || T.ai === 'downloading' ? `<span class="ai-badge">Basic tutor · <button class="link-btn" data-act="ai-download">Enable on-device AI</button></span>`
+      : `<span class="ai-badge" title="Your browser doesn’t include a built-in AI model, so the tutor uses LataNote’s own on-device engine.">Basic tutor (works offline)</span>`;
+    const chips = ['Summarize this note', 'Explain the key terms', 'Quiz me', 'Make me a study plan'];
+    body().innerHTML = `
+      <div class="tutor-head">${mode}${T.msgs.length ? '<button class="link-btn" data-act="tutor-clear">Clear chat</button>' : ''}</div>
+      <div class="tutor-log" id="tutor-log">
+        ${T.msgs.length ? '' : `<div class="tutor-hello"><b>Hi! I’m your study tutor.</b><p>Ask me anything about “${LN.esc(note.title || 'this note')}”, or try one of these:</p></div>`}
+        ${T.msgs.map((m) => `<div class="msg ${m.role}">${fmtMsg(m.text)}</div>`).join('')}
+        ${T.busy ? '<div class="msg assistant typing"><span></span><span></span><span></span></div>' : ''}
+      </div>
+      <div class="st-terms tutor-chips">${chips.map((c) => `<button class="chip" data-act="tutor-chip" data-q="${c}">${c}</button>`).join('')}</div>
+      <form class="st-ask" data-form="tutor"><input name="q" placeholder="Ask your tutor…" autocomplete="off" aria-label="Message"><button class="btn btn-primary btn-sm" type="submit" ${T.busy ? 'disabled' : ''}>Send</button></form>`;
+    const log = $('#tutor-log'); log.scrollTop = log.scrollHeight;
+  }
+
+  const localTutor = (note, q) => {
+    const T = S.tutor, text = LN.noteText(note), lq = q.toLowerCase().trim();
+    if (T.pending) {
+      const p = T.pending; T.pending = null;
+      if (!/^(skip|idk|i don.?t know|pass)$/.test(lq)) {
+        const ok = lq.includes(p.answer.toLowerCase()) || p.answer.toLowerCase().includes(lq) && lq.length > 2;
+        return (ok ? '✅ Correct!' : `Not quite. The answer is **${p.answer}**.`) + (p.explain ? `\n${p.explain}` : '') + '\n\nSay “quiz me” for another question.';
+      }
+      return `The answer is **${p.answer}**.\n\nSay “quiz me” for another question.`;
+    }
+    if (text.split(/\s+/).length < 15) return 'This note doesn’t have much typed text yet. Write some notes (or convert your handwriting to text) and I can help you study them.';
+    if (/summar|tl;?dr|overview|main points/.test(lq)) return 'Here’s a summary of the note:\n' + S.summarize(text).map((x) => '- ' + x).join('\n');
+    if (/quiz|test me|question me|practice/.test(lq)) {
+      const qs = S.buildQuiz(note);
+      if (!qs.length) return 'I need a bit more material to quiz you. Try adding definitions like “Term: meaning”.';
+      const qq = qs[0]; T.pending = { answer: qq.answer, explain: qq.kind === 'Definition' ? '' : qq.prompt.replace('_____', qq.answer) };
+      return `**${qq.kind}:** ${qq.prompt}\n\nOptions: ${qq.options.join(' · ')}\n\nType your answer, or “skip”.`;
+    }
+    if (/study plan|plan|schedule|prepare|exam/.test(lq) && !/what is|define/.test(lq)) {
+      const now = LN.ymd(new Date());
+      const exams = LN.state.events.filter((e) => e.type === 'exam' && e.date >= now).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
+      const cards = note.cards || [], due = cards.filter((c) => (c.due || 0) <= Date.now()).length;
+      const terms = S.keyTerms(text, 5);
+      const lines = ['Here’s a study plan for this note:'];
+      if (exams.length) lines.push(...exams.map((e) => `- **${e.title}** on ${LN.parseYmd(e.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}: start reviewing at least 3 days before.`));
+      lines.push('- **Day 1:** Read the summary, then rewrite the main ideas in your own words.');
+      lines.push(`- **Day 2:** ${cards.length ? `Review your ${cards.length} flashcards${due ? ` (${due} due now)` : ''}.` : 'Generate flashcards in the Flashcards tab and review them.'}`);
+      lines.push(`- **Day 3:** Take two practice quizzes and focus on: ${terms.join(', ')}.`);
+      lines.push('- **Each session:** 25 minutes of focus with the timer in the sidebar, then a 5-minute break.');
+      return lines.join('\n');
+    }
+    if (/key terms|important|vocab|definitions/.test(lq)) {
+      const cards = (note.cards && note.cards.length ? note.cards : S.extractCards(text)).slice(0, 8);
+      if (cards.length) return 'Key terms in this note:\n' + cards.map((c) => `- **${c.front}**: ${c.back}`).join('\n');
+      return 'The most important terms are: ' + S.keyTerms(text, 8).join(', ') + '. Ask me about any of them.';
+    }
+    const r = S.answer(q, 'note');
+    const all = r.results.length ? r : S.answer(q, 'all');
+    const out = [];
+    if (all.def) out.push(`**${all.def.term}**: ${all.def.text}`);
+    const extra = all.results.filter((x) => !all.def || !x.s.toLowerCase().includes(all.def.text.slice(0, 30).toLowerCase())).slice(0, 3);
+    if (extra.length) out.push((out.length ? 'More from your notes:\n' : 'Here’s what your notes say:\n') + extra.map((x) => `- ${x.s}${x.note.id !== note.id ? ` (from “${x.note.title || 'Untitled'}”)` : ''}`).join('\n'));
+    return out.length ? out.join('\n\n') : 'I couldn’t find that in your notes. Try rephrasing, or add notes on that topic.';
+  };
+
+  const aiAsk = async (note, q, onChunk) => {
+    const T = S.tutor, lm = LM();
+    if (!T.session) {
+      const notes = LN.noteText(note).slice(0, 6000);
+      const sys = `You are a patient, encouraging study tutor inside a note-taking app. Base your answers on the student's notes when relevant, and say so when something isn't in the notes. Keep answers short and clear, and use simple bullet points where helpful. When asked to quiz, ask one question at a time and wait for the answer.\n\nThe student's notes, titled "${note.title || 'Untitled'}":\n${notes}`;
+      try { T.session = await lm.create({ initialPrompts: [{ role: 'system', content: sys }] }); }
+      catch (e) { T.session = await lm.create({ systemPrompt: sys }); }
+    }
+    let acc = '';
+    if (T.session.promptStreaming) {
+      for await (const chunk of T.session.promptStreaming(q)) { acc = chunk.startsWith(acc) ? chunk : acc + chunk; onChunk(acc); }
+      return acc;
+    }
+    return T.session.prompt(q);
+  };
+
+  S.tutorSend = async (q) => {
+    const note = LN.editor.note; if (!note || !q.trim()) return;
+    const T = tutorState(note);
+    T.msgs.push({ role: 'user', text: q });
+    T.busy = true; S.render();
+    let reply = '';
+    if (T.ai === 'available') {
+      const msg = { role: 'assistant', text: '' };
+      try {
+        T.msgs.push(msg); T.busy = false; S.render();
+        reply = await aiAsk(note, q, (t) => { msg.text = t; const el = $('#tutor-log .msg.assistant:last-child'); if (el) { el.innerHTML = fmtMsg(t); el.parentElement.scrollTop = 1e9; } });
+        msg.text = reply || msg.text;
+      } catch (e) {
+        console.warn(e); T.msgs.pop(); T.ai = 'unavailable';
+        T.msgs.push({ role: 'assistant', text: localTutor(note, q) });
+      }
+    } else {
+      await new Promise((r) => setTimeout(r, 350));
+      T.msgs.push({ role: 'assistant', text: localTutor(note, q) });
+    }
+    T.busy = false;
+    if (S.tab === 'tutor') S.render();
+  };
+
+  S.enableAI = async () => {
+    const lm = LM(); if (!lm) return;
+    LN.toast('Downloading the on-device AI model. This can take a few minutes…');
+    try {
+      const sess = await lm.create({ monitor(m) { m.addEventListener('downloadprogress', (e) => LN.toast(`Downloading AI model… ${Math.round((e.loaded / (e.total || 1)) * 100)}%`)); } });
+      sess.destroy && sess.destroy();
+      S.tutor.ai = 'available'; LN.toast('On-device AI is ready.'); S.render();
+    } catch (e) { LN.toast('The AI model couldn’t be downloaded on this device.'); }
+  };
+
   /* ---------- actions ---------- */
   const startSession = (note, all) => {
     const now = Date.now();
@@ -327,6 +460,9 @@
       if (qz.picked === q.answer) qz.score++; else qz.missed.push(q);
     } else if (a === 'next-q') { S.quiz.i++; S.quiz.picked = null; }
     else if (a === 'open-note') { LN.app.openNote(b.dataset.id); return; }
+    else if (a === 'tutor-chip') { S.tutorSend(b.dataset.q); return; }
+    else if (a === 'tutor-clear') { if (S.tutor) { S.tutor.msgs = []; S.tutor.pending = null; if (S.tutor.session) { try { S.tutor.session.destroy(); } catch (e) { /* noop */ } S.tutor.session = null; } } }
+    else if (a === 'ai-download') { S.enableAI(); return; }
     S.render();
   };
 
@@ -338,6 +474,9 @@
       note.cards.push({ id: LN.uid(), front: f.elements.front.value.trim(), back: f.elements.back.value.trim(), box: 0, due: 0 });
       LN.touch(note); S.render();
       $('#study-body input[name=front]').focus();
+    } else if (f.dataset.form === 'tutor') {
+      const q = f.elements.q.value; f.elements.q.value = '';
+      S.tutorSend(q).then(() => { const inp = $('#study-body input[name=q]'); if (inp) inp.focus(); });
     } else if (f.dataset.form === 'ask') {
       S.ask.q = f.elements.q.value.trim();
       S.ask.results = S.ask.q ? S.answer(S.ask.q, S.ask.scope) : null;

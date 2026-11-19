@@ -6,6 +6,11 @@
   <title>LataNote</title>
   <meta name="theme-color" content="#4f46e5">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="LataNote">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;500;600;700;800&display=swap">
@@ -40,9 +45,20 @@
     </div>
 
     <div class="sb-foot">
+      <button class="icon-btn" id="settings-btn" title="Settings, sync &amp; backup" aria-label="Settings"><i data-icon="settings"></i></button>
       <button class="icon-btn" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode"><i data-icon="moon"></i></button>
-      <button class="icon-btn" id="backup-btn" title="Back up everything" aria-label="Back up everything"><i data-icon="download"></i></button>
-      <button class="icon-btn" id="import-btn" title="Import a note or backup" aria-label="Import a note or backup"><i data-icon="upload"></i></button>
+      <div class="menu-wrap up">
+        <button class="icon-btn" id="timer-btn" title="Focus timer" aria-label="Focus timer"><i data-icon="clock"></i><span id="timer-label"></span></button>
+        <div class="menu timer-pop" id="timer-pop" hidden>
+          <div class="tp-time" id="tp-time">25:00</div>
+          <div class="tp-mode" id="tp-mode">Focus</div>
+          <div class="tp-presets">
+            <button class="chip" data-min="25">25 min</button><button class="chip" data-min="50">50 min</button><button class="chip" data-min="5">5 break</button><button class="chip" data-min="15">15 break</button>
+          </div>
+          <div class="tp-actions"><button class="btn btn-primary btn-sm" id="tp-start">Start</button><button class="btn btn-ghost btn-sm" id="tp-reset">Reset</button></div>
+        </div>
+      </div>
+      <button class="icon-btn" id="install-btn" title="Install LataNote as an app" aria-label="Install app" hidden><i data-icon="install"></i></button>
       <span class="sb-save" id="save-state">Saved</span>
     </div>
   </aside>
@@ -65,18 +81,26 @@
         <div class="top-actions">
           <button class="icon-btn rec-btn" id="rec-btn" title="Record audio" aria-label="Record audio"><i data-icon="mic"></i></button>
           <button class="icon-btn" id="study-btn" title="Study assistant" aria-label="Study assistant"><i data-icon="sparkles"></i></button>
+          <span class="live-chip" id="live-chip" hidden title="Live collaboration"><span class="live-dot"></span><span id="live-count">Live</span></span>
           <button class="icon-btn" id="present-btn" title="Present" aria-label="Present"><i data-icon="present"></i></button>
+          <button class="icon-btn" id="fs-btn" title="Full screen (F)" aria-label="Full screen"><i data-icon="maximize"></i></button>
           <div class="menu-wrap">
             <button class="icon-btn" id="more-btn" aria-haspopup="menu" aria-label="More"><i data-icon="more"></i></button>
             <div class="menu" id="more-menu" role="menu" hidden>
+              <button role="menuitem" data-cmd="pin"><i data-icon="pin"></i> <span id="pin-label">Pin note</span></button>
+              <button role="menuitem" data-cmd="collab"><i data-icon="users"></i> Collaborate live…</button>
+              <button role="menuitem" data-cmd="ocr"><i data-icon="scan"></i> Convert handwriting to text</button>
+              <button role="menuitem" data-cmd="speak"><i data-icon="volume"></i> <span id="speak-label">Read aloud</span></button>
+              <hr>
               <button role="menuitem" data-cmd="export-html"><i data-icon="download"></i> Export as HTML</button>
+              <button role="menuitem" data-cmd="export-md"><i data-icon="download"></i> Export as Markdown</button>
               <button role="menuitem" data-cmd="print"><i data-icon="printer"></i> Print / Save as PDF</button>
               <button role="menuitem" data-cmd="share"><i data-icon="share"></i> Share note file</button>
               <button role="menuitem" data-cmd="duplicate"><i data-icon="copy"></i> Duplicate note</button>
               <button role="menuitem" data-cmd="move"><i data-icon="folder"></i> Move to notebook…</button>
               <hr>
               <button role="menuitem" data-cmd="clear-ink"><i data-icon="eraser"></i> Clear all ink</button>
-              <button role="menuitem" data-cmd="delete" class="danger"><i data-icon="trash"></i> Delete note</button>
+              <button role="menuitem" data-cmd="delete" class="danger"><i data-icon="trash"></i> Move to trash</button>
             </div>
           </div>
         </div>
@@ -112,12 +136,20 @@
           <button class="tb-btn" data-cmd="link" title="Insert link"><i data-icon="link"></i></button>
           <button class="tb-btn" data-cmd="image" title="Insert image"><i data-icon="image"></i></button>
           <button class="tb-btn" data-exec="removeFormat" title="Clear formatting"><i data-icon="clear"></i></button>
+          <span class="sep"></span>
+          <button class="tb-btn" data-cmd="dictate" id="dictate-btn" title="Dictate: speak to type"><i data-icon="mic"></i></button>
         </div>
 
         <div class="tb-group tb-draw">
           <button class="tb-btn tool active" data-tool="pen" title="Pen (P)"><i data-icon="pen"></i></button>
           <button class="tb-btn tool" data-tool="highlighter" title="Highlighter (H)"><i data-icon="highlighter"></i></button>
           <button class="tb-btn tool" data-tool="eraser" title="Eraser (E)"><i data-icon="eraser"></i></button>
+          <button class="tb-btn tool" data-tool="lasso" title="Lasso: select, move, recolor (L)"><i data-icon="lasso"></i></button>
+          <span class="tb-sel">
+            <button class="tb-btn" data-sel="duplicate" title="Duplicate selection"><i data-icon="copy"></i></button>
+            <button class="tb-btn" data-sel="ocr" title="Convert selection to text"><i data-icon="scan"></i></button>
+            <button class="tb-btn danger" data-sel="delete" title="Delete selection (Del)"><i data-icon="trash"></i></button>
+          </span>
           <span class="sep"></span>
           <button class="tb-btn tool" data-tool="line" title="Line"><i data-icon="line"></i></button>
           <button class="tb-btn tool" data-tool="arrow" title="Arrow"><i data-icon="arrow"></i></button>
@@ -157,11 +189,12 @@
       </div>
 
       <div class="pages-area" id="pages-area">
+        <div class="templates" id="templates" hidden></div>
         <div class="pages" id="pages"></div>
         <div class="empty" id="empty" hidden>
           <img src="assets/logo.svg" alt="" width="56" height="56">
-          <h2>No note selected</h2>
-          <p>Create a note to start writing, drawing and recording.</p>
+          <h2 id="empty-title">Your notebook is empty</h2>
+          <p id="empty-msg">Create your first note to start writing, drawing, recording and studying.</p>
           <button class="btn btn-primary" data-cmd="new-note"><i data-icon="plus"></i> New note</button>
         </div>
       </div>
@@ -231,6 +264,7 @@
       <button class="tab" data-tab="cards">Flashcards</button>
       <button class="tab" data-tab="quiz">Quiz</button>
       <button class="tab" data-tab="ask">Ask</button>
+      <button class="tab" data-tab="tutor">Tutor</button>
     </div>
     <div class="drawer-body" id="study-body"></div>
     <p class="drawer-foot"><i data-icon="lock"></i> Runs on your device. Your notes never leave this browser.</p>
@@ -265,6 +299,12 @@
   </form>
 </dialog>
 
+<!-- PANEL (settings, collaboration, OCR results, shortcuts) -->
+<dialog class="dlg panel" id="panel">
+  <button class="icon-btn panel-x" id="panel-x" aria-label="Close"><i data-icon="x"></i></button>
+  <div id="panel-body"></div>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <input type="file" id="file-image" accept="image/*" hidden>
 <input type="file" id="file-pdf" accept="application/pdf,image/*" hidden>
@@ -276,6 +316,8 @@
 <script src="js/audio.js"></script>
 <script src="js/planner.js"></script>
 <script src="js/study.js"></script>
+<script src="js/extras.js"></script>
+<script src="js/collab.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

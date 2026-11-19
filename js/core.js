@@ -37,7 +37,7 @@
     const doc = new DOMParser().parseFromString(withBreaks, 'text/html');
     return (doc.body.textContent || '').replace(/[ \t ]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
   };
-  LN.noteText = (note) => (note ? note.pages.map((p) => LN.htmlToText(p.html)).join('\n') : '');
+  LN.noteText = (note) => (note ? note.pages.map((p) => LN.htmlToText(p.html) + (p.ocr ? '\n' + p.ocr : '')).join('\n') : '');
 
   /* ---------- storage (IndexedDB with localStorage fallback) ---------- */
   LN.db = (() => {
@@ -113,10 +113,10 @@
       LN.state = Object.assign(LN.state, s);
       LN.state.settings = Object.assign({ penOnly: false }, s.settings);
       LN.state.ui = s.ui || {};
-    } else {
-      LN.seed();
-      LN.save();
     }
+    LN.state.trash = LN.state.trash || [];
+    LN.cleanSamples();
+    LN.save();
   };
 
   /* ---------- tiny event bus ---------- */
@@ -179,6 +179,21 @@
     cards: 'M3 8h14v12H3z|M7 4h14v12',
     shuffle: 'M16 3h5v5|M4 20 21 3|M21 16v5h-5|M15 15l6 6|M4 4l5 5',
     link2: 'M9 17H7a5 5 0 0 1 0-10h2|M15 7h2a5 5 0 0 1 0 10h-2|M8 12h8',
+    settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z|M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
+    clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z|M12 7v5l3 2',
+    install: 'M12 3v11|M7 9l5 5 5-5|M5 19h14',
+    maximize: 'M8 3H3v5|M16 3h5v5|M8 21H3v-5|M16 21h5v-5',
+    minimize: 'M3 8h5V3|M21 8h-5V3|M3 16h5v5|M21 16h-5v5',
+    pin: 'M12 17v5|M9 3h6l-1 6 4 4H6l4-4z',
+    users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z|M2 21v-1a6 6 0 0 1 12 0v1|M16 3.5a4 4 0 0 1 0 7|M22 21v-1a6 6 0 0 0-4-5.6',
+    scan: 'M3 7V3h4|M17 3h4v4|M21 17v4h-4|M7 21H3v-4|M7 12h10|M7 8h6|M7 16h8',
+    volume: 'M11 5 6 9H2v6h4l5 4z|M15.5 8.5a5 5 0 0 1 0 7|M19 5a10 10 0 0 1 0 14',
+    lasso: 'M7 22a5 5 0 0 1-2-4|M3.3 14A7 7 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1|M5 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+    refresh: 'M21 12a9 9 0 1 1-3-6.7L21 8|M21 3v5h-5',
+    restore: 'M3 12a9 9 0 1 0 3-6.7L3 8|M3 3v5h5',
+    send: 'M22 2 11 13|M22 2l-7 20-4-9-9-4z',
+    keyboard: 'M3 6h18v12H3z|M7 10h.01|M11 10h.01|M15 10h.01|M7 14h10',
+    devices: 'M4 5h12v9H4z|M2 18h16|M18 9h4v11h-4z',
   };
   LN.icon = (name, cls = '') => {
     const d = P[name] || P.note;
@@ -224,79 +239,25 @@
   LN.confirm = async (title, message, ok = 'Delete') => !!(await LN.dialog({ title, message, ok, danger: true }));
   LN.prompt = async (title, value = '', placeholder = '') => { const r = await LN.dialog({ title, input: { value, placeholder } }); return r ? r.value : null; };
 
-  /* ---------- seed content ---------- */
-  LN.seed = () => {
-    const bio = { id: LN.uid(), name: 'Biology 101', color: '#10b981', created: Date.now() };
-    const hist = { id: LN.uid(), name: 'World History', color: '#f59e0b', created: Date.now() };
-    const pers = { id: LN.uid(), name: 'Personal', color: '#6366f1', created: Date.now() };
-    LN.state.notebooks = [bio, hist, pers];
-
-    const welcome = LN.newNote(pers.id, 'Welcome to LataNote 👋');
-    welcome.pages[0].html = `
-<h1>Welcome to LataNote</h1>
-<p>This is your space to think, create, learn and get things done. Here’s a quick tour:</p>
-<ul class="checklist">
-<li>Switch between <b>Type</b> and <b>Draw</b> at the top. Both layers live on the same page.</li>
-<li>Press <b>Draw</b>, pick the pen or highlighter, and write anywhere on this page.</li>
-<li>Tap the <b>microphone</b> to record audio. Ink you write while recording replays in sync.</li>
-<li>Import a <b>PDF or image</b> with the page button in the toolbar and annotate it.</li>
-<li>Open the <b>✦ Study assistant</b> for summaries, flashcards, quizzes and answers.</li>
-<li>Use <b>Present</b> to show your notes full screen with a laser pointer.</li>
-<li>Plan your week in the <b>Planner</b>, linking events to notes.</li>
-</ul>
-<p>Everything saves automatically in this browser. Use the download button in the sidebar to back up all your notebooks.</p>`;
-    welcome.pages[0].strokes = [
-      { tool: 'highlighter', color: '#fde047', size: 6, pts: [[94, 72, .5], [250, 73, .5], [402, 71, .5]] },
-      { tool: 'arrow', color: '#e11d48', size: 2.5, a: [596, 72], b: [424, 72] },
-      { tool: 'pen', color: '#e11d48', size: 2.2, pts: Array.from({ length: 11 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 13 : 32; return [640 + r * Math.cos(a), 68 + r * Math.sin(a), 0.5]; }) },
-    ];
-    const cell = LN.newNote(bio.id, 'Cell structure & organelles');
-    cell.pages[0].html = `
-<h1>Cell structure &amp; organelles</h1>
-<p>The cell is the basic unit of life. All living organisms are made of one or more cells, and all cells come from pre-existing cells.</p>
-<h2>Key organelles</h2>
-<p>Nucleus: the control center of the cell that stores DNA and directs protein synthesis.</p>
-<p>Mitochondria: organelles that produce ATP through cellular respiration, often called the powerhouse of the cell.</p>
-<p>Ribosomes: small structures that assemble proteins from amino acids using instructions carried by mRNA.</p>
-<p>Golgi apparatus: modifies, sorts and packages proteins for transport inside or outside the cell.</p>
-<p>Cell membrane: a phospholipid bilayer that controls what enters and leaves the cell.</p>
-<p>Chloroplasts: organelles in plant cells where photosynthesis converts light energy into chemical energy.</p>
-<h2>Prokaryotes vs eukaryotes</h2>
-<p>Prokaryotic cells lack a nucleus and membrane-bound organelles, while eukaryotic cells have both. Bacteria are prokaryotes. Plants, animals and fungi are eukaryotes. Eukaryotic cells are usually much larger than prokaryotic cells.</p>
-<p>The inner membrane of the mitochondria is folded into cristae, which increase the surface area available for ATP production. Cells with high energy demands, such as muscle cells, contain many mitochondria.</p>`;
-    cell.paper = 'lined';
-
-    const photo = LN.newNote(bio.id, 'Photosynthesis');
-    photo.paper = 'grid';
-    photo.pages[0].html = `
-<h1>Photosynthesis</h1>
-<p>Photosynthesis is the process by which plants, algae and some bacteria convert light energy into chemical energy stored in glucose.</p>
-<p>Light-dependent reactions: take place in the thylakoid membranes and produce ATP, NADPH and oxygen.</p>
-<p>Calvin cycle: takes place in the stroma and uses ATP and NADPH to fix carbon dioxide into sugar.</p>
-<p>Chlorophyll: the green pigment that absorbs mostly red and blue light.</p>
-<p>The overall equation is 6CO2 + 6H2O + light → C6H12O6 + 6O2. The rate of photosynthesis depends on light intensity, carbon dioxide concentration and temperature.</p>`;
-
-    const rev = LN.newNote(hist.id, 'The French Revolution');
-    rev.paper = 'cornell';
-    rev.pages[0].html = `
-<h1>The French Revolution (1789–1799)</h1>
-<p>The French Revolution was a period of political and social upheaval that ended absolute monarchy in France.</p>
-<p>Estates-General: the assembly of the three estates, clergy, nobility and commoners, summoned by Louis XVI in 1789.</p>
-<p>Storming of the Bastille: the attack on a royal fortress in Paris on 14 July 1789, which became a symbol of the revolution.</p>
-<p>Reign of Terror: the period from 1793 to 1794 when the government executed thousands of suspected enemies of the revolution.</p>
-<p>Napoleon Bonaparte seized power in 1799, which is usually considered the end of the revolution. Causes included financial crisis, food shortages and Enlightenment ideas about rights and equality.</p>`;
-
-    LN.state.notes = [welcome, cell, photo, rev];
-
-    const today = new Date();
-    const at = (off) => { const d = new Date(today); d.setDate(d.getDate() + off); return LN.ymd(d); };
-    LN.state.events = [
-      { id: LN.uid(), date: at(0), time: '09:00', title: 'Biology lecture', type: 'class', noteId: cell.id, done: false },
-      { id: LN.uid(), date: at(0), time: '', title: 'Review photosynthesis flashcards', type: 'task', noteId: photo.id, done: false },
-      { id: LN.uid(), date: at(2), time: '13:30', title: 'History seminar', type: 'class', noteId: rev.id, done: false },
-      { id: LN.uid(), date: at(5), time: '10:00', title: 'Biology midterm', type: 'exam', noteId: cell.id, done: false },
-      { id: LN.uid(), date: at(8), time: '', title: 'Essay draft due', type: 'task', noteId: null, done: false },
-    ];
-    LN.state.ui = { notebookId: null, noteId: welcome.id };
+  /* ---------- remove the sample content older versions created ---------- */
+  LN.cleanSamples = () => {
+    if (LN.state.ui.samplesRemoved) return;
+    LN.state.ui.samplesRemoved = true;
+    const SAMPLE_NOTES = {
+      'Welcome to LataNote 👋': 'Here’s a quick tour',
+      'Cell structure & organelles': 'The cell is the basic unit of life',
+      'Photosynthesis': 'Photosynthesis is the process by which plants, algae',
+      'The French Revolution': 'period of political and social upheaval',
+    };
+    const SAMPLE_NBS = ['Biology 101', 'World History', 'Personal'];
+    const SAMPLE_EVENTS = ['Biology lecture', 'Review photosynthesis flashcards', 'History seminar', 'Biology midterm', 'Essay draft due'];
+    const isSample = (n) => SAMPLE_NOTES[n.title] && n.pages.length === 1 && !n.recordings.length && n.pages[0].html.includes(SAMPLE_NOTES[n.title]);
+    const before = LN.state.notes.length;
+    LN.state.notes = LN.state.notes.filter((n) => !isSample(n));
+    LN.state.notebooks = LN.state.notebooks.filter((nb) => !SAMPLE_NBS.includes(nb.name) || LN.state.notes.some((n) => n.notebookId === nb.id));
+    LN.state.events = LN.state.events.filter((e) => !SAMPLE_EVENTS.includes(e.title));
+    if (LN.state.ui.noteId && !LN.getNote(LN.state.ui.noteId)) LN.state.ui.noteId = null;
+    if (LN.state.ui.notebookId && !LN.getNotebook(LN.state.ui.notebookId)) LN.state.ui.notebookId = null;
+    return before !== LN.state.notes.length;
   };
 })();
