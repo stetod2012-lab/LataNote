@@ -56,7 +56,7 @@
     A.rec = null;
     $('#rec-live').hidden = true;
     $('#rec-btn').classList.remove('recording');
-    $('#rec-label').textContent = 'Record';
+    $('#rec-label').textContent = '';
     A.renderList();
   };
 

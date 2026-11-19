@@ -21,8 +21,7 @@
   X.updateFsButton = () => {
     const on = X.isFullscreen();
     document.body.classList.toggle('is-fullscreen', on);
-    const b = $('#fs-btn');
-    if (b) { b.innerHTML = LN.icon(on ? 'minimize' : 'maximize'); b.title = on ? 'Exit full screen (F)' : 'Full screen (F)'; b.classList.toggle('active', on); }
+    const l = $('#fs-label'); if (l) l.textContent = on ? 'Exit full screen' : 'Full screen';
     window.dispatchEvent(new Event('resize'));
   };
   X.toggleFullscreen = async () => {
@@ -420,7 +419,7 @@
       if (e.target === $('#panel')) LN.closePanel(); // backdrop click
     });
     $('#panel').addEventListener('close', () => { $('#panel-body').onclick = null; $('#panel-body').onchange = null; if (window.speechSynthesis) X.updateSpeakLabel(); });
-    $('#fs-btn').addEventListener('click', X.toggleFullscreen);
+
     $('#install-btn').addEventListener('click', X.install);
     $('#settings-btn').addEventListener('click', X.settings);
     X.initTimer();

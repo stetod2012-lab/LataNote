@@ -2,7 +2,8 @@
 (function () {
   'use strict';
   const LN = window.LN, $ = LN.$, $$ = LN.$$;
-  const ZOOMS = [0.5, 0.67, 0.75, 0.85, 1, 1.1, 1.25, 1.5, 1.75, 2];
+  const ZOOMS = [0.3, 0.4, 0.5, 0.67, 0.75, 0.85, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
+  const ZMIN = 0.3, ZMAX = 4;
 
   const E = (LN.editor = {
     note: null, mode: 'type', zoom: 1, fit: true,
@@ -46,11 +47,14 @@
     LN.emit('note-opened', note);
   };
 
+  // the back button shows where the note lives ("‹ Biology")
   E.renderChip = () => {
-    const chip = $('#nb-chip'); if (!chip) return;
+    const lbl = $('#back-label'), btn = $('#back-btn'); if (!lbl) return;
     const path = E.note && E.note.notebookId && LN.lib ? LN.lib.path(E.note.notebookId) : [];
-    chip.textContent = path.length ? path.map((c) => c.name).join(' › ') : 'All notes';
-    chip.style.setProperty('--c', path.length ? LN.lib.colorOf(E.note.notebookId) : '#94a3b8');
+    const here = path.length ? path[path.length - 1] : null;
+    lbl.textContent = here ? here.name : 'All notes';
+    btn.title = 'Back to ' + (path.length ? path.map((c) => c.name).join(' › ') : 'All notes') + ' (Esc)';
+    btn.style.setProperty('--c', here ? LN.lib.colorOf(here.id) : 'var(--text-3)');
   };
 
   E.renderPages = () => {
@@ -220,13 +224,13 @@
     return Math.min(best, Math.max(0, E.note.pages.length - 1));
   };
 
-  E.layout = (rec) => {
+  E.layout = (rec, quick) => {
     const w = rec.page.offsetWidth, h = rec.page.offsetHeight, z = E.zoom;
     if (!w) return;
     rec.page.style.transform = `scale(${z})`;
     rec.wrap.style.width = w * z + 'px';
     rec.wrap.style.height = h * z + 'px';
-    rec.ink.resize(w, h, Math.min(3, (window.devicePixelRatio || 1) * z));
+    if (!quick) rec.ink.resize(w, h, Math.min(3, (window.devicePixelRatio || 1) * z));
   };
 
   E.computeFit = () => {
@@ -236,16 +240,35 @@
     E.zoom = Math.max(0.3, Math.min(1, avail / LN.PAGE_W));
     E.updateZoomLabel();
   };
+  // step zoom: dir = 1 (in), -1 (out), 0 (fit to width)
   E.setZoom = (dir) => {
-    if (dir === 0) { E.fit = true; E.computeFit(); }
-    else {
-      E.fit = false;
-      const idx = ZOOMS.findIndex((z) => z >= E.zoom - 0.001);
-      let next = dir > 0 ? ZOOMS.find((z) => z > E.zoom + 0.001) : [...ZOOMS].reverse().find((z) => z < E.zoom - 0.001);
-      E.zoom = next || (idx < 0 ? ZOOMS[ZOOMS.length - 1] : E.zoom);
+    if (dir === 0) {
+      const area = $('#pages-area'), old = E.zoom;
+      E.fit = true; E.computeFit();
+      const r = E.zoom / old;
+      E.pages.forEach((rec) => E.layout(rec));
+      area.scrollTop = area.scrollTop * r; area.scrollLeft = 0;
+      return;
     }
+    const next = dir > 0 ? ZOOMS.find((z) => z > E.zoom + 0.001) : [...ZOOMS].reverse().find((z) => z < E.zoom - 0.001);
+    if (next) E.setZoomTo(next);
+  };
+  // continuous zoom that keeps the point under `focal` (px inside the page area) still
+  let settleT = 0;
+  E.setZoomTo = (z, focal, quick) => {
+    if (!E.note) return;
+    z = Math.max(ZMIN, Math.min(ZMAX, z));
+    const area = $('#pages-area'), old = E.zoom;
+    if (Math.abs(z - old) < 0.0005) return;
+    const fx = focal ? focal.x : area.clientWidth / 2, fy = focal ? focal.y : area.clientHeight / 2;
+    const cx = area.scrollLeft + fx, cy = area.scrollTop + fy, r = z / old;
+    E.zoom = z; E.fit = false;
     E.updateZoomLabel();
-    E.pages.forEach(E.layout);
+    E.pages.forEach((rec) => E.layout(rec, quick));
+    area.scrollLeft = Math.max(0, cx * r - fx);
+    area.scrollTop = Math.max(0, cy * r - fy);
+    clearTimeout(settleT);
+    if (quick) settleT = setTimeout(() => E.pages.forEach((rec) => E.layout(rec)), 180); // sharpen ink once zooming pauses
   };
   E.updateZoomLabel = () => { $('#zoom-label').textContent = Math.round(E.zoom * 100) + '%'; };
 
@@ -535,15 +558,57 @@
     el.classList.add('show');
     clearTimeout(indT); indT = setTimeout(() => el.classList.remove('show'), 1400);
   };
-  let wheelAcc = 0;
+  /* ---------- zoom gestures ---------- */
   document.addEventListener('DOMContentLoaded', () => {
-    $('#pages-area').addEventListener('scroll', () => requestAnimationFrame(E.updatePageInd), { passive: true });
-    $('#pages-area').addEventListener('wheel', (e) => {
-      if (!e.ctrlKey || !E.note) return;
+    const area = $('#pages-area');
+    const rel = (x, y) => { const r = area.getBoundingClientRect(), z = LN.uiZoom ? LN.uiZoom() : 1; return { x: (x - r.left) / z, y: (y - r.top) / z }; };
+    area.addEventListener('scroll', () => requestAnimationFrame(E.updatePageInd), { passive: true });
+
+    // trackpad pinch (sent as ctrl+wheel) and Ctrl/Cmd + mouse wheel: smooth, anchored at the cursor
+    area.addEventListener('wheel', (e) => {
+      if (!(e.ctrlKey || e.metaKey) || !E.note) return;
       e.preventDefault();
-      wheelAcc += e.deltaY;
-      if (Math.abs(wheelAcc) > 40) { E.setZoom(wheelAcc < 0 ? 1 : -1); wheelAcc = 0; }
+      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      // mouse-wheel notches are big: one gentle step each; trackpad pinches send small deltas: follow them smoothly
+      const f = Math.abs(dy) >= 40 ? (dy < 0 ? 1.12 : 1 / 1.12) : Math.exp(-dy * 0.012);
+      E.setZoomTo(E.zoom * f, rel(e.clientX, e.clientY), true);
     }, { passive: false });
+
+    // two-finger pinch on touch screens (also pans); works in Type and Draw mode
+    let pinch = null;
+    const two = (t) => { const a = t[0], b = t[1]; return { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }; };
+    area.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 2 || !E.note) return;
+      LN.pinching = true;
+      E.pages.forEach((r) => r.ink.cancel()); // a second finger means "zoom", not "draw"
+      const g = two(e.touches);
+      pinch = { d0: g.d || 1, z0: E.zoom, x: g.x, y: g.y };
+      e.preventDefault();
+    }, { passive: false });
+    area.addEventListener('touchmove', (e) => {
+      if (!pinch || e.touches.length !== 2) return;
+      e.preventDefault();
+      const g = two(e.touches);
+      E.setZoomTo(pinch.z0 * (g.d / pinch.d0), rel(g.x, g.y), true);
+      area.scrollBy(pinch.x - g.x, pinch.y - g.y);
+      pinch.x = g.x; pinch.y = g.y;
+    }, { passive: false });
+    const endPinch = (e) => {
+      if (!pinch || (e.touches && e.touches.length >= 2)) return;
+      pinch = null;
+      setTimeout(() => { LN.pinching = false; }, 60);
+    };
+    area.addEventListener('touchend', endPinch);
+    area.addEventListener('touchcancel', endPinch);
+
+    // Safari on Mac/iPad: native gesture events
+    let gz = 1;
+    area.addEventListener('gesturestart', (e) => { e.preventDefault(); gz = E.zoom; });
+    area.addEventListener('gesturechange', (e) => { e.preventDefault(); if (!pinch) E.setZoomTo(gz * e.scale, rel(e.clientX, e.clientY), true); });
+    area.addEventListener('gestureend', (e) => e.preventDefault());
+
+    // double-click the zoom % to toggle 100% / fit
+    $('#zoom-label').addEventListener('dblclick', () => (Math.abs(E.zoom - 1) < 0.01 ? E.setZoom(0) : E.setZoomTo(1)));
   });
 
   window.addEventListener('resize', LN.debounce(() => { if (E.fit && E.note) { E.computeFit(); E.pages.forEach(E.layout); } }, 120));

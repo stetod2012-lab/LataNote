@@ -1,5 +1,5 @@
 /* LataNote service worker: makes the app load instantly and work offline. */
-const VERSION = 'latanote-v5';
+const VERSION = 'latanote-v6';
 const CORE = [
   './', 'index.html', 'app.html', 'manifest.webmanifest',
   'css/base.css', 'css/site.css', 'css/app.css', 'css/themes.css',

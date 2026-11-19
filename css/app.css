@@ -752,3 +752,44 @@ body.dragging .card-thumb { pointer-events: none; }
   .toolbar { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; }
   .tb-main { overflow: visible; }
 }
+
+/* ===================== v6: minimal top bar & zoom ===================== */
+.note-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr); align-items: center; gap: 12px; min-height: 58px; padding: 8px 14px; background: var(--surface-2); border-bottom: 0; }
+.nt-left, .nt-right { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.nt-right { justify-self: end; }
+.nt-center { display: flex; justify-content: center; min-width: 0; }
+.note-top .note-title { width: min(52vw, 560px); text-align: center; font-size: 1.08rem; font-weight: 700; padding: 7px 12px !important; margin: 0; border-radius: 10px; color: var(--text); text-overflow: ellipsis; }
+.note-top .note-title::placeholder { color: var(--text-3); }
+.note-top .note-title:hover { background: color-mix(in srgb, var(--surface) 70%, transparent) !important; }
+.note-top .note-title:focus { background: var(--surface) !important; box-shadow: 0 0 0 2px var(--ring) !important; text-align: left; }
+.back-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; height: 38px; padding: 0 14px 0 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 600; font-size: .9rem; cursor: pointer; min-width: 0; }
+.back-btn:hover { border-color: color-mix(in srgb, var(--brand) 40%, var(--border)); }
+.back-btn .ico { width: 17px; height: 17px; flex: none; color: var(--text-2); }
+.back-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: center; gap: 7px; }
+.back-btn span::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--c, var(--text-3)); flex: none; }
+.round-btn { width: 38px; height: 38px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); display: inline-grid; grid-auto-flow: column; place-items: center; gap: 6px; cursor: pointer; flex: none; padding: 0; transition: background .12s, color .12s, border-color .12s; }
+.round-btn:hover { color: var(--text); border-color: color-mix(in srgb, var(--brand) 40%, var(--border)); }
+.round-btn .ico { width: 18px; height: 18px; }
+.round-btn.active { background: var(--brand-50); color: var(--brand); border-color: transparent; }
+.round-btn.rec-btn.recording { width: auto; padding: 0 14px 0 12px; background: var(--rose); border-color: var(--rose); color: #fff; font-weight: 700; font-variant-numeric: tabular-nums; animation: recpulse 1.6s infinite; }
+.rec-btn span:empty { display: none; }
+#more-menu { top: 46px; }
+#more-menu kbd { margin-left: auto; }
+html[data-fx] .note-top { background: color-mix(in srgb, var(--surface) 55%, transparent); }
+
+/* zoom controls */
+.zbtn .ico { width: 16px; height: 16px; }
+.zoom-label { min-width: 54px; font-size: .82rem; font-weight: 700; }
+
+/* zoomed pages can be wider than the screen: keep them scrollable both ways */
+.pages-area { touch-action: pan-x pan-y; }
+.pages { width: max-content; min-width: 100%; margin: 0 auto; }
+
+@media (max-width: 760px) {
+  .note-top { grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; padding: 6px 8px; }
+  .back-btn { padding: 0 10px 0 6px; }
+  .back-btn span { display: none; }
+  .note-top .note-title { width: 100%; font-size: 1rem; }
+  .round-btn { width: 36px; height: 36px; }
+  #view-notes .menu-btn { display: none; }
+}

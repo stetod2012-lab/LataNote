@@ -90,6 +90,7 @@
       LN.state.notes.push(copy); LN.touch(copy); App.openNote(copy.id);
     } else if (cmd === 'move') LN.lib.moveDialog('note', note.id);
     else if (cmd === 'present') App.present();
+    else if (cmd === 'fullscreen') LN.extras.toggleFullscreen();
     else if (cmd === 'export') App.exportPanel();
     else if (cmd === 'insert-pdf') $('#file-pdf').click(); else if (cmd === 'clear-ink') E().clearInk();
     else if (cmd === 'delete') {
@@ -307,7 +308,6 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
     $('#theme-toggle').addEventListener('click', () => LN.appearance.open());
     $('#file-import').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) App.importFile(f); });
     $('#back-btn').addEventListener('click', () => { const n = E().note; LN.lib.open(n && n.notebookId && LN.lib.get(n.notebookId) ? n.notebookId : null); });
-    $('#nb-chip').addEventListener('click', () => { const n = E().note; LN.lib.open(n && n.notebookId ? n.notebookId : null); });
 
     // title
     $('#note-title').addEventListener('input', (e) => { const n = E().note; if (!n) return; n.title = e.target.value; LN.touch(n); });
@@ -387,6 +387,9 @@ ${p.bg ? `<img class="bg" src="${p.bg}" alt="">` : ''}<div class="txt">${p.html}
       if (mod && e.key.toLowerCase() === 'z' && !inField) { e.preventDefault(); e.shiftKey ? E().doRedo() : E().doUndo(); return; }
       if (mod && e.key.toLowerCase() === 'y' && !inField) { e.preventDefault(); E().doRedo(); return; }
       if (mod && e.altKey && e.key.toLowerCase() === 'n') { e.preventDefault(); App.newNote(); return; }
+      if (mod && App.view === 'notes' && E().note && ['=', '+', '-', '_', '0'].includes(e.key)) {
+        e.preventDefault(); E().setZoom(e.key === '0' ? 0 : e.key === '-' || e.key === '_' ? -1 : 1); return;
+      }
       if (mod && e.key.toLowerCase() === 'k' && !e.shiftKey) { e.preventDefault(); document.body.classList.add('sidebar-open'); $('#search').focus(); return; }
       if (inField || mod || e.altKey) return;
       if (e.key === 'f' || e.key === 'F') { LN.extras.toggleFullscreen(); return; }

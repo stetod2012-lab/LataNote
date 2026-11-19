@@ -85,24 +85,21 @@
     <!-- NOTE VIEW -->
     <section class="view" id="view-notes" hidden>
       <header class="topbar note-top">
-        <button class="icon-btn menu-btn" data-action="toggle-sidebar" aria-label="Open sidebar"><i data-icon="menu"></i></button>
-        <button class="back-btn" id="back-btn" title="Back to library (Esc)" aria-label="Back to library"><i data-icon="back"></i><span>Library</span></button>
-        <div class="title-wrap">
-          <input class="note-title" id="note-title" placeholder="Untitled note" aria-label="Note title">
-          <div class="note-sub">
-            <button class="nb-chip" id="nb-chip" title="Show this location in the library"></button>
-            <span class="note-status" id="note-status" aria-live="polite">Saved</span>
-          </div>
+        <div class="nt-left">
+          <button class="icon-btn menu-btn" data-action="toggle-sidebar" aria-label="Open sidebar"><i data-icon="menu"></i></button>
+          <button class="back-btn" id="back-btn" aria-label="Back to library"><i data-icon="back"></i><span id="back-label">All notes</span></button>
         </div>
-        <div class="top-actions">
+        <div class="nt-center">
+          <input class="note-title" id="note-title" placeholder="Untitled note" aria-label="Note title" autocomplete="off">
+        </div>
+        <div class="nt-right">
           <span class="live-chip" id="live-chip" hidden title="Live collaboration"><span class="live-dot"></span><span id="live-count">Live</span></span>
-          <button class="act-btn rec-btn" id="rec-btn" title="Record audio while you write" aria-label="Record audio"><i data-icon="mic"></i><span id="rec-label">Record</span></button>
-          <button class="act-btn" id="study-btn" title="Study assistant: summaries, flashcards, quizzes, tutor" aria-label="Study assistant"><i data-icon="sparkles"></i><span>Study</span></button>
-          <span class="act-sep"></span>
-          <button class="icon-btn" id="fs-btn" title="Full screen (F)" aria-label="Full screen"><i data-icon="maximize"></i></button>
+          <button class="round-btn rec-btn" id="rec-btn" title="Record audio while you write" aria-label="Record audio"><i data-icon="mic"></i><span id="rec-label"></span></button>
+          <button class="round-btn" id="study-btn" title="Study assistant" aria-label="Study assistant"><i data-icon="sparkles"></i></button>
           <div class="menu-wrap">
-            <button class="icon-btn" id="more-btn" aria-haspopup="menu" aria-label="More"><i data-icon="more"></i></button>
+            <button class="round-btn" id="more-btn" aria-haspopup="menu" aria-label="More options" title="More"><i data-icon="more"></i></button>
             <div class="menu" id="more-menu" role="menu" hidden>
+              <button role="menuitem" data-cmd="fullscreen"><i data-icon="maximize"></i> <span id="fs-label">Full screen</span><kbd>F</kbd></button>
               <button role="menuitem" data-cmd="present"><i data-icon="present"></i> Present</button>
               <button role="menuitem" data-cmd="collab"><i data-icon="users"></i> Collaborate live…</button>
               <button role="menuitem" data-cmd="ocr"><i data-icon="scan"></i> Convert handwriting to text</button>
@@ -178,7 +175,10 @@
         <div class="tb-pill tb-right">
           <button class="tb-btn paper-btn" data-cmd="paper" title="Page background, line spacing and paper color"><i data-icon="layout"></i><span id="paper-label">Lined</span></button>
           <button class="tb-btn" data-cmd="add-page" title="Add a page"><i data-icon="pageplus"></i></button>
-          <button class="tb-btn zoom-label drop" data-drop="zoom" id="zoom-label" title="Zoom">100%</button>
+          <span class="sep"></span>
+          <button class="tb-btn zbtn" data-zoom="-1" title="Zoom out (Ctrl −, or pinch)" aria-label="Zoom out"><i data-icon="minus"></i></button>
+          <button class="tb-btn zoom-label" data-zoom="0" id="zoom-label" title="Fit page to width (double-click for 100%)">100%</button>
+          <button class="tb-btn zbtn" data-zoom="1" title="Zoom in (Ctrl +, or pinch)" aria-label="Zoom in"><i data-icon="plus"></i></button>
         </div>
       </div>
 

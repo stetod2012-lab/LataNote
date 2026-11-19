@@ -159,7 +159,7 @@
         try { this.c.setPointerCapture(e.pointerId); } catch (_) { /* noop */ }
         return;
       }
-      if (this.pid !== null || !this.accepts(e)) return;
+      if (LN.pinching || this.pid !== null || !this.accepts(e)) return;
       e.preventDefault();
       this.pid = e.pointerId;
       try { this.c.setPointerCapture(e.pointerId); } catch (_) { /* noop */ }
@@ -195,6 +195,7 @@
     }
     move(e) {
       if (this.pan && e.pointerId === this.pan.id) {
+        if (LN.pinching) return;
         const area = this.c.closest('.pages-area');
         if (area) area.scrollBy(this.pan.x - e.clientX, this.pan.y - e.clientY);
         this.pan.x = e.clientX; this.pan.y = e.clientY;
@@ -282,6 +283,14 @@
       const r = 4 + LN.tool.size * 1.5;
       const keep = this.page.strokes.filter((s) => !hit(s, p, r));
       if (keep.length !== this.page.strokes.length) { this.page.strokes = keep; this.render(); }
+    }
+    // abandon whatever the pointer was doing (used when a pinch-zoom starts)
+    cancel() {
+      if (this.pid === null && !this.pan) return;
+      if (this.erasing) this.page.strokes = this.before;
+      if (this.drag) { this.page.strokes = this.drag.before; this.sel = this.drag.orig; }
+      this.cur = null; this.lasso = null; this.erasing = false; this.drag = null; this.pid = null; this.pan = null;
+      this.render();
     }
     setSel(sel) {
       if (LN.inkSel && LN.inkSel !== this) LN.inkSel.clearSel();
