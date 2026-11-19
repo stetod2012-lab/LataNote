@@ -261,6 +261,9 @@
       }
       if (LN.pinching || this.pid !== null || !this.accepts(e)) return;
       e.preventDefault();
+      // starting to draw leaves any text field (closes the on-screen keyboard)
+      const ae = document.activeElement;
+      if (ae && ae !== document.body && ae.closest && ae.closest('input, textarea, [contenteditable="true"]')) ae.blur();
       this.pid = e.pointerId;
       try { this.c.setPointerCapture(e.pointerId); } catch (_) { /* noop */ }
       const t = LN.tool, p = this.pos(e);

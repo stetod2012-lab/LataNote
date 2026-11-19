@@ -855,3 +855,6 @@ body.mode-draw .mode-seg::before { transform: translateX(calc(100% + 2px)); }
 .timer-pop:not([hidden]) { animation: pop-in .16s ease; transform-origin: bottom left; }
 .lib, .pages-area, .sb-scroll, .drawer-body { scroll-behavior: auto; -webkit-overflow-scrolling: touch; }
 .page-wrap { animation: fade-in .25s ease both; }
+
+.steps { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+.steps .ico { width: 16px; height: 16px; vertical-align: -3px; color: var(--brand); }

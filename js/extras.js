@@ -24,27 +24,88 @@
     const l = $('#fs-label'); if (l) l.textContent = on ? 'Exit full screen' : 'Full screen';
     window.dispatchEvent(new Event('resize'));
   };
-  X.toggleFullscreen = async () => {
-    const root = document.documentElement;
-    const req = root.requestFullscreen || root.webkitRequestFullscreen;
-    const exit = document.exitFullscreen || document.webkitExitFullscreen;
-    if (fsEl()) { await exit.call(document); return; }
-    if (document.body.classList.contains('is-fullscreen')) { document.body.classList.remove('is-fullscreen'); X.updateFsButton(); return; }
-    // Safari (Mac, iPad, iPhone) warns about typing in browser full screen, and installed apps are already
-    // full screen, so there we use LataNote's own distraction-free mode instead.
+  const env = () => {
     const ua = navigator.userAgent;
-    const safari = /safari/i.test(ua) && !/chrome|chromium|crios|fxios|edg|opr|android/i.test(ua);
     const ios = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const installed = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
-    if (req && !safari && !ios && !installed) {
-      try { await req.call(root, { navigationUI: 'hide' }); return; } catch (e) { /* fall through to focus mode */ }
-    }
-    document.body.classList.add('is-fullscreen');
-    X.updateFsButton();
-    LN.toast('Full screen. Press F or Esc to exit.');
+    return {
+      ios,
+      safari: ios || (/safari/i.test(ua) && !/chrome|chromium|crios|fxios|edg|opr|android/i.test(ua)),
+      installed: (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || !!navigator.standalone,
+    };
   };
-  document.addEventListener('fullscreenchange', () => { if (!fsEl()) document.body.classList.remove('is-fullscreen'); X.updateFsButton(); });
-  document.addEventListener('webkitfullscreenchange', () => { if (!fsEl()) document.body.classList.remove('is-fullscreen'); X.updateFsButton(); });
+  const enterReal = () => {
+    const root = document.documentElement;
+    if (root.requestFullscreen) return root.requestFullscreen({ navigationUI: 'hide' });
+    if (root.webkitRequestFullscreen) return root.webkitRequestFullscreen(window.Element && Element.ALLOW_KEYBOARD_INPUT);
+    return Promise.reject(new Error('unsupported'));
+  };
+  const exitReal = () => (document.exitFullscreen || document.webkitExitFullscreen || (() => {})).call(document);
+  const editable = (el) => !!(el && el.closest && el.closest('input, textarea, select, [contenteditable="true"]'));
+  X.fsWanted = false;
+
+  X.toggleFullscreen = async () => {
+    if (X.fsWanted || fsEl() || document.body.classList.contains('is-fullscreen')) {
+      X.fsWanted = false; X.paused = false;
+      document.body.classList.remove('is-fullscreen');
+      if (fsEl()) { X.leaving = true; try { await exitReal(); } catch (e) { /* noop */ } }
+      X.updateFsButton();
+      return;
+    }
+    const E = env();
+    X.fsWanted = true;
+    document.body.classList.add('is-fullscreen'); // LataNote's own distraction-free layout
+    if (!E.installed) {
+      try {
+        if (editable(document.activeElement) && E.safari) document.activeElement.blur(); // Safari warns if you type in full screen
+        await enterReal();                           // hides the browser's address bar and tabs
+      } catch (e) { /* e.g. iPhone: only the app layout */ }
+    }
+    X.updateFsButton();
+    let seen = true; try { seen = !!localStorage.getItem('latanote-fs-tip'); } catch (e) { /* noop */ }
+    if (E.ios && !E.installed && !seen) X.fsTip();
+    else LN.toast('Full screen. Press F or Esc to exit.');
+  };
+
+  // Safari shows a "typing in full screen" warning, so step out of browser full screen while you type
+  // and hide the browser's bars again as soon as you go back to drawing.
+  document.addEventListener('focusin', (e) => {
+    if (!X.fsWanted || !fsEl() || !env().safari || !editable(e.target)) return;
+    X.paused = true; X.leaving = true;
+    exitReal();
+  });
+  const resume = (e) => {
+    if (!X.fsWanted || !X.paused || fsEl() || editable(e.target) || !LN.editor || LN.editor.mode !== 'draw') return;
+    X.paused = false;
+    enterReal().catch(() => {});
+  };
+  document.addEventListener('click', resume, true);
+  document.addEventListener('touchend', resume, true);
+
+  X.fsTip = () => {
+    try { localStorage.setItem('latanote-fs-tip', '1'); } catch (e) { /* noop */ }
+    LN.panel(`
+      <h3>${LN.icon('maximize')} Get rid of Safari’s bars for good</h3>
+      <p>Safari keeps its address bar and tabs while you type. For a true full-screen LataNote, add it to your Home Screen. It then opens like an app, with no Safari bars, and typing works normally.</p>
+      <ol class="steps">
+        <li>Tap the <b>Share</b> button ${LN.icon('share')} in Safari’s toolbar.</li>
+        <li>Choose <b>Add to Home Screen</b>, then tap <b>Add</b>.</li>
+        <li>Open <b>LataNote</b> from your Home Screen. Your notes are all there.</li>
+      </ol>
+      <p class="muted small">Until then, full screen hides Safari’s bars while you draw. When you start typing, the bars come back so Safari doesn’t warn you.</p>
+      <div class="dlg-actions"><button class="btn btn-primary" data-close>Got it</button></div>`);
+  };
+
+  // leaving browser full screen: if we did it on purpose (typing pause / toggle), keep the app's own full-screen
+  // layout; if the person left via Safari's own controls or Esc, turn full screen off completely
+  const onFsChange = () => {
+    if (!fsEl()) {
+      if (X.leaving) X.leaving = false;
+      else { X.fsWanted = false; X.paused = false; document.body.classList.remove('is-fullscreen'); }
+    }
+    X.updateFsButton();
+  };
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
 
   /* ---------- install as an app (PWA) ---------- */
   let installEvt = null;
